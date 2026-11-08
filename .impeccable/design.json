@@ -1,0 +1,273 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-08T17:03:06.847Z",
+  "title": "Design System: NexusAgent",
+  "extensions": {
+    "colorMeta": {
+      "signal-cyan": {
+        "role": "primary",
+        "displayName": "Signal Cyan",
+        "tonalRamp": [
+          "oklch(15% 0.14 205)",
+          "oklch(25% 0.14 205)",
+          "oklch(35% 0.14 205)",
+          "oklch(45% 0.14 205)",
+          "oklch(55% 0.14 205)",
+          "oklch(70% 0.14 205)",
+          "oklch(85% 0.14 205)",
+          "oklch(95% 0.14 205)"
+        ]
+      },
+      "tenant-primary": {
+        "role": "primary",
+        "displayName": "Tenant Primary",
+        "tonalRamp": [
+          "#172554",
+          "#1E3A8A",
+          "#1E40AF",
+          "#1D4ED8",
+          "#2563EB",
+          "#60A5FA",
+          "#BFDBFE",
+          "#EFF6FF"
+        ]
+      },
+      "signal-violet": {
+        "role": "secondary",
+        "displayName": "Signal Violet",
+        "tonalRamp": [
+          "oklch(15% 0.17 285)",
+          "oklch(25% 0.17 285)",
+          "oklch(35% 0.17 285)",
+          "oklch(45% 0.17 285)",
+          "oklch(55% 0.17 285)",
+          "oklch(70% 0.17 285)",
+          "oklch(85% 0.17 285)",
+          "oklch(95% 0.17 285)"
+        ]
+      },
+      "service-teal": {
+        "role": "secondary",
+        "displayName": "Service Teal",
+        "tonalRamp": [
+          "#042F2E",
+          "#134E4A",
+          "#115E59",
+          "#0F766E",
+          "#0D9488",
+          "#2DD4BF",
+          "#99F6E4",
+          "#F0FDFA"
+        ]
+      },
+      "deep-space": {
+        "role": "neutral",
+        "displayName": "Deep Space",
+        "tonalRamp": [
+          "oklch(15% 0.04 270)",
+          "oklch(25% 0.04 270)",
+          "oklch(35% 0.04 270)",
+          "oklch(45% 0.04 270)",
+          "oklch(55% 0.04 270)",
+          "oklch(70% 0.04 270)",
+          "oklch(85% 0.04 270)",
+          "oklch(95% 0.04 270)"
+        ]
+      },
+      "slate-ground": {
+        "role": "neutral",
+        "displayName": "Slate Ground",
+        "tonalRamp": [
+          "#0F172A",
+          "#1E293B",
+          "#334155",
+          "#475569",
+          "#64748B",
+          "#94A3B8",
+          "#E2E8F0",
+          "#F8FAFC"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Agent and company names in the widget header."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Transcript bubbles and replies."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "State chips, metric captions, countdown badges."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Reference codes and timers."
+      },
+      "dashboard-body": {
+        "displayName": "Dashboard body",
+        "purpose": "Dense tables and cards in the dashboard."
+      }
+    },
+    "shadows": [
+      {
+        "name": "console-lift",
+        "value": "0 20px 70px rgba(0,0,0,0.45)",
+        "purpose": "Widget panels and cards."
+      },
+      {
+        "name": "signal-glow",
+        "value": "0 0 0 3px rgba(0,229,255,0.70), 0 0 0 8px rgba(0,229,255,0.18), 0 8px 40px rgba(0,229,255,0.55)",
+        "purpose": "Idle mic orb only (The Signal Glow Rule)."
+      },
+      {
+        "name": "card",
+        "value": "0 2px 8px rgba(0,0,0,0.08), 0 0 1px rgba(0,0,0,0.06)",
+        "purpose": "Dashboard cards."
+      },
+      {
+        "name": "header",
+        "value": "0 2px 6px rgba(0,0,0,0.12)",
+        "purpose": "Headers."
+      }
+    ],
+    "motion": [
+      {
+        "name": "orb-press",
+        "value": "transform 0.22s ease, box-shadow 0.22s ease",
+        "purpose": "Mic orb hover and press."
+      },
+      {
+        "name": "breathe",
+        "value": "nx-btn-breathe 1.4s ease-in-out infinite",
+        "purpose": "Recording state."
+      },
+      {
+        "name": "wave-ring",
+        "value": "nx-wring 2s ease-out infinite",
+        "purpose": "Recording rings."
+      },
+      {
+        "name": "fade-up",
+        "value": "fade-up 0.2s ease-out forwards",
+        "purpose": "New messages and chips."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "xs",
+        "value": "390px"
+      },
+      {
+        "name": "sm",
+        "value": "480px"
+      },
+      {
+        "name": "md",
+        "value": "560px"
+      },
+      {
+        "name": "split",
+        "value": "900px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Mic Button (idle)",
+      "kind": "custom",
+      "refersTo": "mic-button-idle",
+      "description": "The single glowing focal control of the widget. As built: 82px rounded square (21px radius).",
+      "html": "<button class=\"ds-orb\" aria-label=\"Start talking\"><svg width=\"42\" height=\"42\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2\" stroke-linecap=\"round\"><rect x=\"9\" y=\"3\" width=\"6\" height=\"11\" rx=\"3\"/><path d=\"M5 11a7 7 0 0 0 14 0M12 18v3\"/></svg></button>",
+      "css": ".ds-orb{width:82px;height:82px;border-radius:21px;border:2px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;cursor:pointer;background:radial-gradient(circle at 38% 28%,rgba(255,255,255,0.28),transparent 32%),linear-gradient(145deg,#00CCEE 0%,#0A12B8 100%);box-shadow:0 0 0 3px rgba(0,229,255,0.70),0 0 0 8px rgba(0,229,255,0.18),0 8px 40px rgba(0,229,255,0.55),0 20px 56px rgba(0,0,0,0.70);transition:transform .22s ease,box-shadow .22s ease}.ds-orb:hover{transform:scale(1.08)}.ds-orb:active{transform:scale(.95)}.ds-orb:focus-visible{outline:3px solid #F0F6FF;outline-offset:6px}"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": "status-chip",
+      "description": "Phase label under the orb.",
+      "html": "<span class=\"ds-chip\"><span class=\"ds-chip-dot\"></span>Ready to listen</span>",
+      "css": ".ds-chip{display:inline-flex;align-items:center;gap:.38rem;padding:.25rem .75rem;border-radius:999px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:rgba(16,185,129,.9);font:500 .68rem/1.4 Inter,system-ui,sans-serif}.ds-chip-dot{width:6px;height:6px;border-radius:50%;background:currentColor}"
+    },
+    {
+      "name": "Agent Bubble",
+      "kind": "card",
+      "refersTo": "agent-bubble",
+      "description": "Agent reply in the transcript.",
+      "html": "<div class=\"ds-bubble\">Thanks for visiting the Gulberg branch. How was your experience today?</div>",
+      "css": ".ds-bubble{max-width:60ch;padding:.7rem .9rem;border-radius:1rem;background:rgba(14,22,58,.96);border:1px solid rgba(0,229,255,.26);color:#F0F6FF;font:500 .86rem/1.5 Inter,system-ui,sans-serif}"
+    },
+    {
+      "name": "Dashboard Card",
+      "kind": "card",
+      "refersTo": "dash-card",
+      "description": "KPI or content card on slate ground.",
+      "html": "<div class=\"ds-dcard\"><div class=\"ds-dcard-k\">Open complaints</div><div class=\"ds-dcard-v\">14</div></div>",
+      "css": ".ds-dcard{background:#fff;border:1px solid #E2E8F0;border-radius:.75rem;padding:1rem;box-shadow:0 2px 8px rgba(0,0,0,.08),0 0 1px rgba(0,0,0,.06);font-family:'Segoe UI',system-ui,sans-serif}.ds-dcard-k{font-size:.75rem;color:#64748B;font-weight:600}.ds-dcard-v{font-size:1.25rem;font-weight:700;color:#0F172A}"
+    },
+    {
+      "name": "Dashboard Primary Button",
+      "kind": "button",
+      "refersTo": "dash-button-primary",
+      "description": "Primary action in the dashboard.",
+      "html": "<button class=\"ds-dbtn\">Mark resolved</button>",
+      "css": ".ds-dbtn{background:rgb(var(--va-primary,37 99 235));color:#fff;border:0;border-radius:.5rem;padding:.5rem 1rem;font:600 .875rem 'Segoe UI',system-ui,sans-serif;cursor:pointer;transition:background .16s ease}.ds-dbtn:hover{background:rgb(var(--va-primary-dk,29 78 216))}.ds-dbtn:focus-visible{outline:2px solid rgb(var(--va-primary,37 99 235));outline-offset:2px}"
+    },
+    {
+      "name": "Filter Pill",
+      "kind": "chip",
+      "refersTo": "dash-pill",
+      "description": "Active filter in dashboard and Reports tab.",
+      "html": "<button class=\"ds-pill\" aria-pressed=\"true\">Last 30 days</button>",
+      "css": ".ds-pill{background:#EFF6FF;color:#2563EB;border:1px solid #DBEAFE;border-radius:999px;padding:.125rem .6rem;font:600 .75rem 'Segoe UI',system-ui,sans-serif;cursor:pointer}.ds-pill:hover{background:#DBEAFE}.ds-pill:focus-visible{outline:2px solid #2563EB;outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Listening Console",
+    "overview": "NexusAgent is an instrument that is clearly, visibly listening. One luminous control sits at the centre of a quiet, dark console; everything around it exists to show what the agent heard, what it is doing, and how much time is left. The system has one identity and two modes: the expressive widget and the calm operating dashboard.",
+    "keyCharacteristics": [
+      "A single glowing focal control (the mic button) per screen in the widget.",
+      "Dark, layered navy grounds with translucent glass panels; four themes (nexus, daylight, emerald, ember) swap only tokens.",
+      "Every conversation phase (connecting, idle, listening, transcribing, thinking, speaking, ended, error) has a distinct, visible state.",
+      "Time is visible: the 60 s turn countdown is drawn as an arc around the control (the 120 s session cap is not yet shown).",
+      "Dashboard: dense, light, legible; 12 px body text, pill filters, rounded cards."
+    ],
+    "rules": [
+      {
+        "name": "The One Signal Rule",
+        "section": "colors",
+        "body": "In the widget, the signal accent belongs to the agent: the orb, the live dot, the active turn. Decorative surfaces use translucent tints of it (≤ 0.26 alpha lines), never the full colour."
+      },
+      {
+        "name": "The Tenant Owns the Accent Rule",
+        "section": "colors",
+        "body": "Tenant theming flows only through --va-primary* and --nx-accent* variables. Never hard-code a tenant colour into a component."
+      },
+      {
+        "name": "The Weight-Not-Size Rule",
+        "section": "typography",
+        "body": "Inside the widget, create hierarchy with weight and tracking first; the widget lives in small iframes and must not grow headings to compete with the orb."
+      },
+      {
+        "name": "The Signal Glow Rule",
+        "section": "elevation",
+        "body": "Glow and gradient text are deliberate NexusAgent signature, sanctioned in the widget (the mic orb, live states, the company wordmark). They are not used in the dashboard or on data, numbers or body text."
+      }
+    ],
+    "dos": [
+      "Do keep one glowing focal control per widget screen: the mic orb.",
+      "Do give every conversation phase a distinct visual state and a text label.",
+      "Do theme through --nx-* and --va-primary* variables so all four themes and tenant colours keep working.",
+      "Do keep dashboard numbers in solid colours with the slate text hierarchy.",
+      "Do pair status colours with a word or icon."
+    ],
+    "donts": [
+      "Don't use glow or gradient text in the dashboard, on numbers, or on body text (The Signal Glow Rule).",
+      "Don't hard-code tenant or theme colours (for example #00E5FF) in components; use the variable.",
+      "Don't add a second competing glowing element next to the orb.",
+      "Don't grow widget headings to compete with the orb (The Weight-Not-Size Rule)."
+    ]
+  }
+}

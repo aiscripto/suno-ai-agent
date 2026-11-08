@@ -1,0 +1,29 @@
+Task mode: create
+Primary deck-profile: product-platform
+Secondary gates: consumer-retail / customer-experience, outlet operations
+
+Required proof objects:
+- Product system map showing voice capture, AI conversation, classification, persistence, alerts, dashboard, and follow-up.
+- Outlet use-case journey for review capture, complaint escalation, lead/support conversations, and branch benchmarking.
+- Product-to-financial linkage for retention protection, operational visibility, and follow-up efficiency.
+- Deployment model covering iframe embed, shop login, dashboard roles, tenant auth, and branch scoping.
+- Rollout path from pilot outlets to chain-wide adoption.
+
+Source / asset requirements:
+- Use repo-derived facts only: Next.js voice widget, OpenAI Whisper/chat/TTS, optional ElevenLabs TTS, tenant config, English/Urdu/Hindi support, hidden LEAD/REVIEW/END_CALL tokens, MongoDB/Mongoose persistence in current dashboard path, Prisma schema references present in repo, ticket SLA logic, email summary/escalation, iframe embed guide, role-scoped dashboard.
+- Do not claim measured uplift percentages because repo does not contain live deployment metrics.
+- Use editable shapes, text, lines, and diagrammatic UI rather than unsourced screenshots or logos.
+
+Brand/authenticity constraints:
+- Do not use customer logos or outlet brand marks.
+- Present the agent as Nexus Agent because an existing deck and UI naming use NexusAgent.
+- Use neutral premium retail/operations palette: ink, cyan, emerald, amber, red, and white.
+
+QA gates:
+- No more than two feature-card-grid slides.
+- Each slide must have a concrete claim and proof object.
+- Diagrams must label real repo components or real outlet workflows.
+- Text must remain readable in 16:9 thumbnail and full-size preview.
+
+Known missing inputs:
+- No client brand, pricing model, real screenshots, live outlet metrics, or implementation timeline constraints were provided.

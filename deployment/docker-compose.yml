@@ -1,0 +1,29 @@
+services:
+
+  nexus-agent:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    image: tariqsulehri/nexus-agent:latest
+    platform: linux/amd64
+    container_name: nexus-agent
+    restart: unless-stopped
+    env_file:
+      - .env.nexus-agent
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "3020:3000"
+    volumes:
+      - nexus_agent_data:/app/data
+    healthcheck:
+      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3000/agent-login', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  nexus_agent_data:

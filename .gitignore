@@ -5,3 +5,21 @@ node_modules/
 *.log
 
 /src/generated/prisma
+
+# Audit reports (describe weaknesses; never commit)
+/audit/results/
+/deployment/.env.nexus-agent
+
+# Audit folder: keep large and binary files out of git
+/audit/**/*.pdf
+/audit/**/*.ai
+/audit/**/*.bundle
+/audit/**/*.zip
+/audit/**/*.pptx
+/audit/**/*.mp4
+/audit/**/*.mov
+/audit/**/*.log
+/audit/**/.DS_Store
+
+# Impeccable per-developer overrides
+/.impeccable/config.local.json

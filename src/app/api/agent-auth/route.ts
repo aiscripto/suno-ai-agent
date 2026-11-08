@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDB, User, Shop } from '@/lib/db/client'
 import { verifyPassword } from '@/lib/auth/password'
-import { AUTH_COOKIE, AUTH_MAX_AGE_SECS, createSessionToken } from '@/lib/auth/session'
+import { AUTH_COOKIE, AUTH_MAX_AGE_SECS, createSessionToken, isCookieSecure } from '@/lib/auth/session'
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({})) as {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   res.cookies.set(AUTH_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
-    secure:   process.env.NODE_ENV === 'production',
+    secure:   isCookieSecure(),
     path:     '/',
     maxAge:   AUTH_MAX_AGE_SECS,
   })

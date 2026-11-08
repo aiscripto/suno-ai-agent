@@ -3,6 +3,17 @@ import type { NextRequest } from 'next/server'
 export const AUTH_COOKIE = 'app_session'
 export const AUTH_MAX_AGE_SECS = 60 * 60 * 24 * 7
 
+/**
+ * Whether the session cookie carries the `Secure` flag.
+ * Browsers drop Secure cookies on plain-HTTP origins, so set COOKIE_SECURE=false
+ * when serving over http:// (e.g. direct IP:port). Defaults to true in production.
+ */
+export function isCookieSecure(): boolean {
+  const flag = process.env.COOKIE_SECURE?.trim().toLowerCase()
+  if (flag === 'true' || flag === 'false') return flag === 'true'
+  return process.env.NODE_ENV === 'production'
+}
+
 export type AppRole = 'agent' | 'manager' | 'admin'
 
 export interface AppSession {

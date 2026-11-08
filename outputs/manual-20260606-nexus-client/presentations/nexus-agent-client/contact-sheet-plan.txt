@@ -1,0 +1,24 @@
+Slide 01: Cover with outcome rail and live conversation motif.
+Slide 02: Problem field map, not a card grid: customer moments where feedback disappears.
+Slide 03: Product workflow architecture from voice to dashboard.
+Slide 04: Outlet journey lane for review capture.
+Slide 05: Complaint escalation ladder with SLA tiers.
+Slide 06: Branch intelligence dashboard mockup with analytics proof objects.
+Slide 07: Four use-case operating model, compact matrix.
+Slide 08: Deployment and security map.
+Slide 09: Business impact flywheel, no invented metrics.
+Slide 10: Pilot-to-scale rollout timeline.
+Slide 11: Client ask / decision slide.
+
+Macro-layout families:
+- editorial cover
+- field map
+- system architecture
+- journey lane
+- escalation ladder
+- dashboard mockup
+- use-case matrix
+- deployment map
+- flywheel
+- timeline
+- closing decision frame

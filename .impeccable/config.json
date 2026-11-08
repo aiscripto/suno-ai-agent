@@ -1,0 +1,28 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/app/globals.css",
+          "src/components/voice-agent/**"
+        ],
+        "createdAt": "2026-11-08T16:47:14.562Z",
+        "reason": "User confirmed 2026-11-08: glow and gradient text are NexusAgent widget signature (DESIGN.md 'The Signal Glow Rule')"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "src/app/globals.css",
+          "src/components/voice-agent/**"
+        ],
+        "createdAt": "2026-11-08T16:47:14.604Z",
+        "reason": "User confirmed 2026-11-08: glow and gradient text are NexusAgent widget signature (DESIGN.md 'The Signal Glow Rule')"
+      }
+    ]
+  }
+}
