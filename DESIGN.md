@@ -221,6 +221,14 @@ The widget uses **glow and glass**: depth comes from layered navy grounds, trans
 ### Named Rules
 **The Signal Glow Rule.** Glow and gradient text are deliberate NexusAgent signature, sanctioned in the widget (the mic orb, live states, the company wordmark). They are not used in the dashboard or on data, numbers or body text. The design checker exempts `dark-glow` and `gradient-text` only in `src/app/globals.css` and `src/components/voice-agent/**`.
 
+## Motion
+
+**Thesis: calm until it is spoken to.** The one authored motion is the mic while recording (breathe 1.4s, wave rings to 1.32×, the draining 60s arc). The ambient background (drifting blobs, orbits, scan line) runs only during a live conversation (`data-motion="live"` on `.nx-root` while listening, thinking or speaking) and is paused when idle, on end screens, and in hidden tabs, which also keeps always-on counter tablets cool. Entrances use `cubic-bezier(0.16, 1, 0.3, 1)`; no bounce or overshoot. Routine state changes 150–300ms.
+
+**Reduced motion** (`prefers-reduced-motion: reduce`) is an alternative, not an off switch: decorative loops stop and the scan line and orbits are hidden; the avatar is still; recording shows one static ring plus colour, the stop icon, the arc and the countdown; end cards fade without moving; spinners stay but slow to 1.6s; the login error drops its shake.
+
+**The Earned Motion Rule.** Anything that moves must show state (listening, thinking, speaking, time left) or acknowledge an action. Ambient motion pauses whenever nobody is talking.
+
 ## Shapes
 
 Soft and round. The mic orb, avatar and live dots are perfect circles; chips, filters and badges are full pills (999px). Widget cards use 1rem, controls 0.6rem, large panels 20–24px. Dashboard cards use `rounded-xl` (0.75rem) and `rounded-2xl` (1rem); inputs and buttons `rounded-lg` (0.5rem). No sharp corners anywhere in the product.

@@ -124,6 +124,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
   // Seconds left on the "Are you still there?" question; null = not shown
   const [idleWarningSecs,      setIdleWarningSecs]      = useState<number | null>(null)
   const [typeOpen,             setTypeOpen]             = useState(false)
+  const [pageHidden,           setPageHidden]           = useState(false)
   const [typedText,            setTypedText]            = useState('')
   // Status-text fade: track displayed text separately so we can cross-fade
   const [statusText,           setStatusText]           = useState('')
@@ -156,6 +157,14 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
       attributeFilter: ['style', 'data-va-theme'],
     })
     return () => observer.disconnect()
+  }, [])
+
+  // Pause ambient motion while the tab/app is in the background.
+  useEffect(() => {
+    const sync = () => setPageHidden(document.visibilityState === 'hidden')
+    sync()
+    document.addEventListener('visibilitychange', sync)
+    return () => document.removeEventListener('visibilitychange', sync)
   }, [])
 
   // Auto-scroll transcript
@@ -316,6 +325,11 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
 
   const color = themeColor
   const busy  = phase === 'thinking' || phase === 'transcribing' || phase === 'connecting'
+  // "Calm until it is spoken to": the ambient background moves only while a
+  // conversation is actually happening, and never in a hidden tab.
+  const conversing = isRecording || phase === 'listening' || phase === 'transcribing'
+    || phase === 'thinking' || phase === 'speaking'
+  const motion = conversing && !pageHidden ? 'live' : 'calm'
 
   const recordingRemaining = RECORDING_LIMIT_SECS - recordSecs
   const recordingCountdown = formatClock(recordingRemaining)
@@ -356,7 +370,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
   }, [busy, endCall, endStep, hasCustomerTurn, isRecording, onReset, phase, reviewData.sentiment])
 
   return (
-    <div className="nx-root">
+    <div className="nx-root" data-motion={motion}>
 
       {/* ── Animated background ─────────────────────────────────────────── */}
       <NxBg />

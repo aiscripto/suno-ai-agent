@@ -347,7 +347,7 @@ html, body {
   border-radius: 1.5rem; padding: 2.5rem 2rem;
   box-shadow: var(--nx-shadow, 0 20px 60px rgba(0,0,0,0.6));
   backdrop-filter: blur(var(--nx-glass-blur, 18px));
-  animation: nx-ty-pop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  animation: nx-ty-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .nx-shop-icon { font-size: 2.8rem; }
 .nx-shop-title {
@@ -705,7 +705,7 @@ html, body {
   display: flex; flex-direction: column;
   align-items: center; gap: 0.85rem;
   text-align: center; max-width: 400px; width: 100%;
-  animation: nx-ty-pop 0.55s cubic-bezier(0.34,1.56,0.64,1);
+  animation: nx-ty-pop 0.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes nx-ty-pop {
   from { opacity: 0; transform: scale(0.72) translateY(20px); }
@@ -3670,3 +3670,71 @@ html, body {
 /* Chart axis labels: the hard-coded #64748b was 3.4:1 on the dark surface */
 .dash-dashboard .recharts-cartesian-axis-tick-value,
 .dash-dashboard .recharts-cartesian-axis-tick text { fill: var(--dash-muted); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MOTION — "calm until it is spoken to" (2026-11)
+   Focal motion: the mic while recording (breathe, rings, draining arc).
+   Ambient background: runs only during a live conversation (data-motion=live),
+   paused when idle, on end screens, and in hidden tabs.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.nx-root[data-motion="calm"] .nx-bg,
+.nx-root[data-motion="calm"] .nx-bg * {
+  animation-play-state: paused;
+}
+
+@keyframes nx-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Reduced motion: an intentional alternative, not a blanket kill.
+   Decorative loops stop; state still reads through colour, text, the stop
+   icon, one static ring and the countdown. Progress spinners stay, slower. */
+@media (prefers-reduced-motion: reduce) {
+  /* Ambient decoration */
+  .nx-bg,
+  .nx-bg * { animation: none !important; }
+  .nx-scanline,
+  .nx-orbit,
+  .nx-data-lane { display: none; }
+
+  /* Persona: a still avatar */
+  [class*="robot26-"] { animation: none !important; }
+
+  /* Mic while recording: one static ring instead of expanding waves */
+  .nx-btn-rec,
+  .nx-btn-rec::before,
+  .nx-rec-spectrum span,
+  .nx-send-orb,
+  .nx-wr,
+  .nx-send-ring { animation: none !important; }
+  .nx-dock .nx-wr2,
+  .nx-dock .nx-wr3,
+  .nx-send-ring.nx-sr2,
+  .nx-send-ring.nx-sr3 { display: none; }
+  .nx-dock .nx-wr1 { opacity: 0.6; }
+  .nx-send-dots span { animation: none !important; opacity: 0.85; }
+
+  /* Entrances: fade only, no movement */
+  .nx-conf-card,
+  .nx-shop-card { animation: nx-fade-in 0.2s ease-out both !important; }
+
+  /* Press/hover feedback without scaling */
+  .nx-btn:hover,
+  .nx-btn:active,
+  .nx-action-btn:active { transform: none !important; }
+
+  /* The arc still updates every second, it just does not tween */
+  .nx-arc { transition: none; }
+
+  /* Progress stays visible, slower */
+  .nx-spin { animation-duration: 1.6s !important; }
+
+  /* Login error: the message carries it, no shake */
+  .login-shake { animation: none !important; }
+
+  /* Dashboard */
+  .dash-dashboard .animate-pulse { animation: none; }
+  .dash-dashboard [class*="hover:scale"]:hover { transform: none !important; }
+}
