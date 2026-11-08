@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-08T20:11:28.897873+00:00",
+  "generatedAt": "2026-11-08T20:24:53.712652+00:00",
   "title": "Design System: NexusAgent",
   "extensions": {
     "colorMeta": {
@@ -179,9 +179,9 @@
       "name": "Mic Button (idle)",
       "kind": "custom",
       "refersTo": "mic-button-idle",
-      "description": "The single glowing focal control of the widget. As built: 82px rounded square (21px radius).",
+      "description": "The single glowing focal control of the widget: a 128px circle (112px on phones).",
       "html": "<button class=\"ds-orb\" aria-label=\"Start talking\"><svg width=\"42\" height=\"42\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2\" stroke-linecap=\"round\"><rect x=\"9\" y=\"3\" width=\"6\" height=\"11\" rx=\"3\"/><path d=\"M5 11a7 7 0 0 0 14 0M12 18v3\"/></svg></button>",
-      "css": ".ds-orb{width:82px;height:82px;border-radius:21px;border:2px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;cursor:pointer;background:radial-gradient(circle at 38% 28%,rgba(255,255,255,0.28),transparent 32%),linear-gradient(145deg,#00CCEE 0%,#0A12B8 100%);box-shadow:0 0 0 3px rgba(0,229,255,0.70),0 0 0 8px rgba(0,229,255,0.18),0 8px 40px rgba(0,229,255,0.55),0 20px 56px rgba(0,0,0,0.70);transition:transform .22s ease,box-shadow .22s ease}.ds-orb:hover{transform:scale(1.08)}.ds-orb:active{transform:scale(.95)}.ds-orb:focus-visible{outline:3px solid #F0F6FF;outline-offset:6px}"
+      "css": ".ds-orb{width:128px;height:128px;border-radius:50%;border:2px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;cursor:pointer;background:radial-gradient(circle at 38% 28%,rgba(255,255,255,0.28),transparent 32%),linear-gradient(145deg,#00CCEE 0%,#0A12B8 100%);box-shadow:0 0 0 3px rgba(0,229,255,0.70),0 0 0 8px rgba(0,229,255,0.18),0 8px 40px rgba(0,229,255,0.55),0 20px 56px rgba(0,0,0,0.70);transition:transform .22s ease,box-shadow .22s ease}.ds-orb:hover{transform:scale(1.08)}.ds-orb:active{transform:scale(.95)}.ds-orb:focus-visible{outline:3px solid #F0F6FF;outline-offset:6px}"
     },
     {
       "name": "Agent Bubble",
@@ -220,7 +220,7 @@
     "northStar": "The Listening Console",
     "overview": "NexusAgent is an instrument that is clearly, visibly listening. One luminous control sits at the centre of a quiet, dark console; everything around it exists to show what the agent heard, what it is doing, and how much time is left. The system has one identity and two modes: the expressive widget and the calm operating dashboard.",
     "keyCharacteristics": [
-      "A single glowing focal control (the mic button) per screen in the widget.",
+      "A single glowing focal control (the round mic) per screen in the widget, always the largest object.",
       "Dark, layered navy grounds with translucent glass panels; four themes (nexus, daylight, emerald, ember) swap only tokens.",
       "Every conversation phase (connecting, idle, listening, transcribing, thinking, speaking, ended, error) has a distinct state, announced in one status line.",
       "Time is visible: the 60 s turn countdown is drawn as an arc around the control (the 120 s session cap is not yet shown).",
@@ -251,6 +251,11 @@
         "name": "The Signal Glow Rule",
         "section": "elevation",
         "body": "Glow and gradient text are deliberate NexusAgent signature, sanctioned in the widget (the mic orb, live states, the company wordmark). They are not used in the dashboard or on data, numbers or body text."
+      },
+      {
+        "name": "The One Hero Rule",
+        "section": "layout",
+        "body": "The mic is the largest interactive object on every widget screen. Nothing animated or decorative may be larger than it or sit between the status line and it."
       }
     ],
     "dos": [

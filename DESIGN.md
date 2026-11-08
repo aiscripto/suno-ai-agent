@@ -62,7 +62,6 @@ rounded:
   panel: "22px"
   pill: "999px"
   orb: "50%"
-  mic: "21px"
   dash-sm: "0.5rem"
   dash-md: "0.75rem"
   dash-lg: "1rem"
@@ -76,13 +75,13 @@ components:
   mic-button-idle:
     backgroundColor: "{colors.signal-cyan}"
     textColor: "{colors.starlight-text}"
-    rounded: "{rounded.mic}"
-    size: "82px"
+    rounded: "{rounded.orb}"
+    size: "128px"
   mic-button-busy:
     backgroundColor: "{colors.console-navy}"
     textColor: "{colors.starlight-text}"
-    rounded: "{rounded.mic}"
-    size: "82px"
+    rounded: "{rounded.orb}"
+    size: "128px"
   agent-bubble:
     backgroundColor: "{colors.night-navy}"
     textColor: "{colors.starlight-text}"
@@ -121,7 +120,7 @@ The system has **one identity and two modes**. The **widget** (`/voice`, iframe 
 Tenants change the accent, the agent's name and voice; they never change structure, states or the console's behaviour.
 
 **Key Characteristics:**
-- A single glowing focal control (the mic button) per screen in the widget.
+- A single glowing focal control (the round mic) per screen in the widget, always the largest object.
 - Dark, layered navy grounds with translucent glass panels; four themes (nexus, daylight, emerald, ember) swap only tokens.
 - Every conversation phase (connecting, idle, listening, transcribing, thinking, speaking, ended, error) has a distinct state, announced in one status line.
 - Time is visible: the 60 s turn countdown is drawn as an arc around the control (the 120 s session cap is not yet shown).
@@ -181,7 +180,9 @@ A night-sky console lit by one signal colour, with a sober slate palette for ope
 
 ## Layout
 
-The widget is a single vertical column: header (company, live dot, theme controls) → agent rail / orb section → transcript → button zone with the mic orb and countdown arc → text fallback. On wide screens (≥ 900px) the fullscreen mode splits into an agent rail and a conversation panel; below 900px it stacks. Breakpoints in use: 900px, 560px, 480px, 390px, plus a short-height rule (`min-width: 900px and max-height: 760px`). Spacing runs on a 0.25rem step (0.25 / 0.5 / 0.75 / 1 / 1.25rem).
+The widget is one stage with three regions in this DOM order, which is also the reading order on phones and portrait counter tablets: **agent strip** (avatar, name, branch) → **conversation** (the customer's own words, given the most room) → **controls dock** (status line, mic, one action hint, close cue, "Type instead"). Below 900px the regions stack and the dock sits at the bottom in thumb reach, so the mic can never be covered. From 900px a grid puts the agent strip and dock in a 300–380px left column and the conversation beside them. The header (brand, EN/اردو, End Call) sits above the stage; errors appear in the flow above the header, never over it. Breakpoints in use: 900px (split), plus a short-height rule that hides the close cue on short phones. Spacing runs on a 0.25rem step (0.25 / 0.5 / 0.75 / 1 / 1.25rem).
+
+**The One Hero Rule.** The mic is the largest interactive object on every widget screen. Nothing animated or decorative may be larger than it or sit between the status line and it.
 
 The dashboard is a header with tabs over a responsive card grid; filters are pill rows; tables are compact (`px-3 py-2`, `text-xs`). Gaps use 0.5–1rem (`gap-2` to `gap-4`).
 
@@ -206,11 +207,14 @@ Soft and round. The mic orb, avatar and live dots are perfect circles; chips, fi
 ## Components
 
 ### Mic Button (signature)
-- **Shape as built:** a rounded square, not a circle: 96px with a 24px radius (`globals.css:3354`), reduced to 82px / 21px radius in the final pass (`:3787`) and 76px on phones (`:3538`). The countdown arc around it is still a circle (`R=68`, `nexus-agent.tsx:310`), so the shapes conflict. An earlier 120px-circle rule (`:1126`) is overridden. Treat circle vs. squircle as an open design decision.
+- **Shape:** a perfect circle in every state: 128px inside a 152px zone from 900px, 112px inside 132px on phones and portrait tablets. The countdown arc is drawn around it in the same zone; inner decorative layers are clipped to the circle.
 - **Idle:** cyan-to-indigo gradient (`#00CCEE → #0A12B8`) with a specular highlight and the signal glow; hover scales to 1.08, press to 0.95.
-- **Recording:** breathes (scale 1 → 1.06, 1.4s) with three expanding wave rings.
+- **Recording:** breathes (scale 1 → 1.06, 1.4s); three wave rings expand to 1.32× and stay inside the controls region.
 - **Busy (connecting, thinking):** dark navy fill, muted ring, 0.72 opacity, `not-allowed` cursor.
-- **Countdown arc:** only the 60s turn countdown is drawn (with a "0:42 turn left" badge). The 120s session cap is **not shown** in the UI yet (`nexus-agent.tsx:166` is an empty stub).
+- **Countdown:** only the 60s turn countdown is drawn (arc plus a "0:42 turn left" badge). The 120s session cap is **not shown** in the UI yet.
+
+### Agent strip
+- **Persona, not hero:** the robot is a 44px avatar beside the agent's name and the branch badge. It never competes with the mic.
 
 ### Status line
 - **One place for status:** a single `role="status"` line under the agent says what the agent is doing (connecting, listening, thinking, speaking). The button label below the mic only says what tapping does ("Tap to speak", "Tap to send", "Tap to interrupt"). No other element repeats the phase.

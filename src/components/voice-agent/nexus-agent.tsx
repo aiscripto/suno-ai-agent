@@ -471,8 +471,9 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
 
             {ticket && (
               <div className="nx-ticket-card" style={{ borderColor: color + '36' }}>
-                <span className="nx-ticket-label">Your reference — our team may use it to follow up</span>
+                <span className="nx-ticket-label">Your reference</span>
                 <strong style={{ color }}>{ticket.id}</strong>
+                <p className="nx-ticket-note">Our team may use it to follow up with you.</p>
               </div>
             )}
 
@@ -605,156 +606,34 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
             </div>
           </header>
 
-          <div className="nx-main-grid">
-            <section className="nx-agent-rail">
-              <section className="nx-agent-panel" style={{ borderColor: color + '26', transition: 'border-color 0.5s ease' }}>
-                <div className="nx-agent-topline">
-                  <div className="nx-agent-meta">
-                    <h1>{agentName || 'Review Agent'}</h1>
-                    {shopName && (
-                      <span className="nx-shop-badge">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                        </svg>
-                        {shopName}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </section>
-
-              <div className="nx-orb-section">
-                <div className="nx-avatar-wrap">
-                  <AnimatedAvatar phase={phase} color={color} size="md" />
-                </div>
-
-                {/* Cross-fade status text so phase transitions don't hard-cut */}
-                <p className="nx-status-txt" role="status" aria-live="polite"
-                   style={{ opacity: statusOpacity, transition: 'opacity 0.13s ease' }}>
-                  {statusText || STATUS[phase]}
-                </p>
-              </div>
-
-
-              <div className="nx-btn-zone">
-                <div className="nx-btn-wrap">
-
-                  {isRecording && (
-                    <>
-                      <div className="nx-wr nx-wr1" style={{ borderColor: color }} />
-                      <div className="nx-wr nx-wr2" style={{ borderColor: color }} />
-                      <div className="nx-wr nx-wr3" style={{ borderColor: color }} />
-                    </>
-                  )}
-
-                  {isRecording && (
-                    <svg className="nx-arc" viewBox="0 0 150 150">
-                      <circle cx="75" cy="75" r={R}
-                        fill="none" stroke={color} strokeWidth="3.5"
-                        strokeLinecap="round"
-                        strokeDasharray={`${CIRC - dash} ${dash}`}
-                        transform="rotate(-90 75 75)"
-                        opacity="0.82" />
+          {/* Layout: DOM order is agent → conversation → controls, which is the
+              reading order on a phone/counter tablet. On wide screens CSS grid
+              places the controls under the agent, beside the conversation. */}
+          <div className="nx-stage">
+            <section className="nx-agent-strip" aria-label="Agent">
+              <span className="nx-agent-avatar" aria-hidden="true">
+                <AnimatedAvatar phase={phase} color={color} size="sm" />
+              </span>
+              <span className="nx-agent-id">
+                <h1 className="nx-agent-title">{agentName || 'Review Agent'}</h1>
+                {shopName && (
+                  <span className="nx-shop-badge">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                     </svg>
-                  )}
-
-                  <button
-                    onClick={toggleMic}
-                    disabled={busy}
-                    className={`nx-btn ${isRecording ? 'nx-btn-rec' : busy ? 'nx-btn-busy' : 'nx-btn-idle'}`}
-                    style={isRecording ? ({ '--nx-rec-color': color } as CSSProperties) : undefined}
-                    aria-label={isRecording ? 'Stop recording and send'
-                      : phase === 'speaking' ? 'Interrupt the agent'
-                      : 'Start recording'}
-                  >
-                    {isRecording ? (
-                      <>
-                        <span className="nx-rec-spectrum" aria-hidden>
-                          {[0, 1, 2, 3, 4].map((i) => <span key={i} />)}
-                        </span>
-                        <svg viewBox="0 0 24 24" className="nx-bi nx-stop-icon">
-                          <rect x="6" y="6" width="12" height="12" rx="3" fill="white" />
-                        </svg>
-                      </>
-                    ) : busy ? (
-                      <div className="nx-spin" style={{ borderTopColor: color }} />
-                    ) : (
-                      <svg viewBox="0 0 24 24" className="nx-bi" fill="none"
-                           stroke="white" strokeWidth="1.8" strokeLinecap="round">
-                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                        <line x1="12" y1="19" x2="12" y2="23" />
-                        <line x1="8"  y1="23" x2="16" y2="23" />
-                      </svg>
-                    )}
-
-                    {isRecording && (
-                      <span className="nx-recdot" style={{ background: color }} />
-                    )}
-                  </button>
-                </div>
-
-                {isRecording && (
-                  <div className="nx-countdown-badge" style={{ borderColor: color + '55', color }}>
-                    <span className="nx-countdown-time">{recordingCountdown}</span>
-                    <span className="nx-countdown-sub">turn left</span>
-                  </div>
+                    {shopName}
+                  </span>
                 )}
-
-                {/* Action hint only: what tapping the button does now. The status line
-                    above is the one place that says what the agent is doing. */}
-                {!busy && (
-                  <p className="nx-btn-lbl">
-                    {isRecording ? 'Tap to send'
-                     : phase === 'speaking' ? 'Tap to interrupt'
-                     : 'Tap to speak'}
-                  </p>
-                )}
-
-                <div className="nx-end-policy">
-                  <span className="nx-close-cue">Say thanks or goodbye to close</span>
-                </div>
-
-                {/* Text fallback: for a blocked mic, a noisy shop, or anyone who prefers typing */}
-                {typeOpen ? (
-                  <form className="nx-type-form" onSubmit={submitTyped}>
-                    <label htmlFor="nx-type-input" className="sr-only">Type your message</label>
-                    <input
-                      id="nx-type-input"
-                      className="nx-type-input"
-                      value={typedText}
-                      onChange={(e) => setTypedText(e.target.value)}
-                      placeholder="Type your message"
-                      dir="auto"
-                      autoComplete="off"
-                      maxLength={1000}
-                      disabled={!canType}
-                      autoFocus
-                    />
-                    <button type="submit" className="nx-action-btn nx-action-btn--primary"
-                            disabled={!canType || !typedText.trim()}>
-                      Send
-                    </button>
-                  </form>
-                ) : (
-                  <button type="button" className="nx-type-toggle" onClick={() => setTypeOpen(true)}>
-                    Type instead
-                  </button>
-                )}
-
-              </div>
+              </span>
             </section>
 
-            <section className="nx-conversation-panel" style={{ borderColor: color + '26', transition: 'border-color 0.5s ease' }}>
-              <div className="nx-conversation-head">
-                <h2>Conversation</h2>
-              </div>
-
+            <section className="nx-convo" aria-labelledby="nx-convo-title">
+              <h2 id="nx-convo-title" className="nx-convo-title">Conversation</h2>
               <div ref={transcriptRef} className="nx-transcript scrollbar-thin">
                 {transcript.length === 0 && phase !== 'connecting' && (
                   <div className="nx-empty">
-                    <p className="nx-empty-t">Voice channel standing by</p>
-                    <p className="nx-empty-s">Press the button and speak naturally</p>
+                    <p className="nx-empty-t">Your conversation will appear here</p>
+                    <p className="nx-empty-s">Tap the microphone and speak naturally.</p>
                   </div>
                 )}
 
@@ -781,7 +660,119 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                   </div>
                 )}
               </div>
+            </section>
 
+            <section className="nx-dock" aria-label="Controls">
+              {/* The one place that says what the agent is doing */}
+              <p className="nx-status-txt" role="status" aria-live="polite"
+                 style={{ opacity: statusOpacity, transition: 'opacity 0.13s ease' }}>
+                {statusText || STATUS[phase]}
+              </p>
+
+              <div className="nx-btn-wrap">
+
+                {isRecording && (
+                  <>
+                    <div className="nx-wr nx-wr1" style={{ borderColor: color }} />
+                    <div className="nx-wr nx-wr2" style={{ borderColor: color }} />
+                    <div className="nx-wr nx-wr3" style={{ borderColor: color }} />
+                  </>
+                )}
+
+                {isRecording && (
+                  <svg className="nx-arc" viewBox="0 0 150 150">
+                    <circle cx="75" cy="75" r={R}
+                      fill="none" stroke={color} strokeWidth="3.5"
+                      strokeLinecap="round"
+                      strokeDasharray={`${CIRC - dash} ${dash}`}
+                      transform="rotate(-90 75 75)"
+                      opacity="0.82" />
+                  </svg>
+                )}
+
+                <button
+                  onClick={toggleMic}
+                  disabled={busy}
+                  className={`nx-btn ${isRecording ? 'nx-btn-rec' : busy ? 'nx-btn-busy' : 'nx-btn-idle'}`}
+                  style={isRecording ? ({ '--nx-rec-color': color } as CSSProperties) : undefined}
+                  aria-label={isRecording ? 'Stop recording and send'
+                    : phase === 'speaking' ? 'Interrupt the agent'
+                    : 'Start recording'}
+                >
+                  {isRecording ? (
+                    <>
+                      <span className="nx-rec-spectrum" aria-hidden>
+                        {[0, 1, 2, 3, 4].map((i) => <span key={i} />)}
+                      </span>
+                      <svg viewBox="0 0 24 24" className="nx-bi nx-stop-icon">
+                        <rect x="6" y="6" width="12" height="12" rx="3" fill="white" />
+                      </svg>
+                    </>
+                  ) : busy ? (
+                    <div className="nx-spin" style={{ borderTopColor: color }} />
+                  ) : (
+                    <svg viewBox="0 0 24 24" className="nx-bi" fill="none"
+                         stroke="white" strokeWidth="1.8" strokeLinecap="round">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                      <line x1="12" y1="19" x2="12" y2="23" />
+                      <line x1="8"  y1="23" x2="16" y2="23" />
+                    </svg>
+                  )}
+
+                  {isRecording && (
+                    <span className="nx-recdot" style={{ background: color }} />
+                  )}
+                </button>
+              </div>
+
+              {isRecording && (
+                <div className="nx-countdown-badge" style={{ borderColor: color + '55', color }}>
+                  <span className="nx-countdown-time">{recordingCountdown}</span>
+                  <span className="nx-countdown-sub">turn left</span>
+                </div>
+              )}
+
+              {/* Action hint only: what tapping the button does now. The status line
+                  above is the one place that says what the agent is doing. */}
+              {!busy && (
+                <p className="nx-btn-lbl">
+                  {isRecording ? 'Tap to send'
+                   : phase === 'speaking' ? 'Tap to interrupt'
+                   : 'Tap to speak'}
+                </p>
+              )}
+
+              <div className="nx-end-policy">
+                <span className="nx-close-cue">Say thanks or goodbye to close</span>
+              </div>
+
+              {/* Text fallback: for a blocked mic, a noisy shop, or anyone who prefers typing */}
+              {typeOpen ? (
+                <form className="nx-type-form" onSubmit={submitTyped}>
+                  <label htmlFor="nx-type-input" className="sr-only">Type your message</label>
+                  <input
+                    id="nx-type-input"
+                    className="nx-type-input"
+                    value={typedText}
+                    onChange={(e) => setTypedText(e.target.value)}
+                    placeholder="Type your message"
+                    dir="auto"
+                    autoComplete="off"
+                    maxLength={1000}
+                    disabled={!canType}
+                    autoFocus
+                  />
+                  <button type="submit" className="nx-action-btn nx-action-btn--primary"
+                          disabled={!canType || !typedText.trim()}>
+                    Send
+                  </button>
+                </form>
+              ) : (
+                <button type="button" className="nx-type-toggle" onClick={() => setTypeOpen(true)}>
+                  Type instead
+                </button>
+              )}
             </section>
           </div>
 

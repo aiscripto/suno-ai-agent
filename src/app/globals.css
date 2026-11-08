@@ -3333,3 +3333,202 @@ html, body {
   text-transform: inherit;
   color: inherit;
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   LAYOUT — "Mic is the hero" (2026-11)
+   One stage, three regions. DOM order = phone reading order:
+   agent → conversation → controls. From 900px the controls sit under the
+   agent strip, beside the conversation. Fresh class names on purpose, so
+   none of the older layered .nx-agent-rail / .nx-main-grid rules apply.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.nx-stage {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "agent" "convo" "dock";
+  gap: 0.6rem;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+@media (min-width: 900px) {
+  .nx-stage {
+    grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "agent convo"
+      "dock  convo";
+    gap: 1rem;
+  }
+}
+
+/* Shared panel surface for the three regions */
+.nx-agent-strip,
+.nx-convo,
+.nx-dock {
+  border: 1px solid var(--nx-line);
+  border-radius: 1rem;
+  background: var(--nx-surface);
+  backdrop-filter: blur(var(--nx-glass-blur, 18px));
+}
+
+/* ── Agent: small persona, name, branch ── */
+.nx-agent-strip {
+  grid-area: agent;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.9rem;
+  min-width: 0;
+}
+.nx-agent-avatar {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+}
+.nx-agent-id {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.nx-agent-title {
+  margin: 0;
+  font: 800 1.05rem/1.2 var(--nx-font-display, inherit);
+  color: var(--nx-text);
+}
+
+/* ── Conversation: the customer's own words, given the most room ── */
+.nx-convo {
+  grid-area: convo;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0.9rem 0.9rem 0.5rem;
+}
+.nx-convo-title {
+  margin: 0 0 0.6rem;
+  font: 800 0.72rem/1 var(--nx-font-ui, inherit);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--nx-text-soft);
+}
+.nx-convo .nx-transcript {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.nx-convo .nx-bubble {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* ── Controls: status, the mic, one hint, the ways out ── */
+.nx-dock {
+  grid-area: dock;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 1.1rem 1rem 0.9rem;
+  text-align: center;
+}
+.nx-dock .nx-status-txt {
+  margin: 0;
+  max-width: 30ch;
+  min-height: 1.4em;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--nx-text);
+}
+.nx-dock .nx-btn-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 152px;
+  height: 152px;
+  margin: 0.15rem 0;
+}
+.nx-dock .nx-btn {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+}
+.nx-dock .nx-bi {
+  width: 46px;
+  height: 46px;
+}
+.nx-dock .nx-arc {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.nx-dock .nx-btn-lbl {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--nx-text-muted);
+}
+.nx-dock .nx-end-policy { margin: 0; }
+.nx-dock .nx-countdown-badge { margin: 0; }
+
+/* Phones and portrait counter tablets: a compact dock pinned at the bottom
+   (thumb reach); the conversation takes whatever height is left. */
+@media (max-width: 899px) {
+  .nx-dock {
+    gap: 0.4rem;
+    padding: 0.8rem 0.75rem 0.6rem;
+  }
+  .nx-dock .nx-btn-wrap { width: 132px; height: 132px; }
+  .nx-dock .nx-btn      { width: 112px; height: 112px; }
+  .nx-dock .nx-bi       { width: 40px;  height: 40px; }
+  .nx-dock .nx-status-txt { font-size: 0.95rem; }
+}
+
+/* Short screens: keep the mic and status, drop the decorative close cue. */
+@media (max-height: 700px) and (max-width: 899px) {
+  .nx-dock .nx-end-policy { display: none; }
+}
+
+/* The mic is a circle in every state: clip the decorative inner layers to it. */
+.nx-dock .nx-btn { overflow: hidden; }
+.nx-dock .nx-btn-rec::after { border-radius: 50%; }
+
+/* Wave rings stay inside the controls region (the old 1.8× scale ran over the
+   status line on phones). */
+@keyframes nx-dock-wring {
+  0%   { transform: scale(0.96); opacity: inherit; }
+  100% { transform: scale(1.32); opacity: 0; }
+}
+.nx-dock .nx-wr  { animation-name: nx-dock-wring; }
+.nx-dock .nx-wr1 { inset: 4px; }
+.nx-dock .nx-wr2 { inset: -4px; }
+.nx-dock .nx-wr3 { inset: -12px; }
+
+/* Errors sit in the page flow above the header, so they never cover
+   the language toggle or End Call. */
+.nx-content > .nx-err-banner {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  width: auto;
+  margin: max(0.6rem, env(safe-area-inset-top)) 0 0;
+}
+
+.nx-ticket-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--nx-text-muted);
+}
