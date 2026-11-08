@@ -32,6 +32,14 @@ const SENTIMENT_COLOR: Record<string, string> = {
   complaint:  '#ef4444',
   suggestion: '#6366f1',
 }
+// Bright SENTIMENT_COLOR is for bars and dots only. Text uses these per-theme
+// ink tokens, which pass WCAG AA on light and dark dashboard surfaces.
+const SENTIMENT_INK: Record<string, string> = {
+  positive:   'var(--dash-ink-positive)',
+  negative:   'var(--dash-ink-negative)',
+  complaint:  'var(--dash-ink-complaint)',
+  suggestion: 'var(--dash-ink-suggestion)',
+}
 const CATEGORY_EMOJI: Record<string, string> = {
   product:   '🍽️',
   service:   '⚡',
@@ -116,10 +124,16 @@ const DASHBOARD_THEMES: Record<DashboardThemeKey, {
       '--dash-heading': '#0f172a',
       '--dash-text': '#334155',
       '--dash-muted': '#64748b',
-      '--dash-subtle': '#94a3b8',
+      '--dash-subtle': '#64748b',
       '--dash-shadow': 'rgb(15 23 42 / 0.08)',
       '--dash-ring': 'rgb(219 234 254 / 0.9)',
       '--dash-accent': '#1d4ed8',
+      '--dash-ink-positive':   '#15803d',
+      '--dash-ink-negative':   '#c2410c',
+      '--dash-ink-complaint':  '#b91c1c',
+      '--dash-ink-suggestion': '#4f46e5',
+      '--dash-ink-rating':     '#b45309',
+      '--dash-ink-info':       '#1d4ed8',
     } as CSSProperties,
     statPanel: 'bg-blue-50 text-blue-900 border-blue-100',
     tabHover: 'hover:border-blue-300 hover:text-blue-700',
@@ -129,7 +143,7 @@ const DASHBOARD_THEMES: Record<DashboardThemeKey, {
   day: {
     name: 'Day',
     bgClass: 'bg-[radial-gradient(circle_at_top_left,rgba(8,145,178,0.16),transparent_30rem),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.13),transparent_30rem),linear-gradient(135deg,#eff9fb_0%,#f8fbff_48%,#edf7ff_100%)]',
-    accent: '#0891b2',
+    accent: '#0e7490',
     accentDark: '#164e63',
     accentSoft: '#cffafe',
     mode: 'light',
@@ -142,10 +156,16 @@ const DASHBOARD_THEMES: Record<DashboardThemeKey, {
       '--dash-heading': '#0c2630',
       '--dash-text': '#274653',
       '--dash-muted': '#5d7782',
-      '--dash-subtle': '#8aa2ac',
+      '--dash-subtle': '#557080',
       '--dash-shadow': 'rgb(8 47 73 / 0.09)',
       '--dash-ring': 'rgb(207 250 254 / 0.9)',
-      '--dash-accent': '#0891b2',
+      '--dash-accent': '#0e7490',
+      '--dash-ink-positive':   '#15803d',
+      '--dash-ink-negative':   '#c2410c',
+      '--dash-ink-complaint':  '#b91c1c',
+      '--dash-ink-suggestion': '#4f46e5',
+      '--dash-ink-rating':     '#b45309',
+      '--dash-ink-info':       '#1d4ed8',
     } as CSSProperties,
     statPanel: 'bg-cyan-50 text-cyan-900 border-cyan-100',
     tabHover: 'hover:border-cyan-300 hover:text-cyan-700',
@@ -168,10 +188,16 @@ const DASHBOARD_THEMES: Record<DashboardThemeKey, {
       '--dash-heading': '#f8fafc',
       '--dash-text': '#dbeafe',
       '--dash-muted': '#a9bbd2',
-      '--dash-subtle': '#7f93ad',
+      '--dash-subtle': '#9fb0c6',
       '--dash-shadow': 'rgb(0 0 0 / 0.28)',
       '--dash-ring': 'rgb(96 165 250 / 0.22)',
       '--dash-accent': '#60a5fa',
+      '--dash-ink-positive':   '#86efac',
+      '--dash-ink-negative':   '#fdba74',
+      '--dash-ink-complaint':  '#fca5a5',
+      '--dash-ink-suggestion': '#a5b4fc',
+      '--dash-ink-rating':     '#fcd34d',
+      '--dash-ink-info':       '#93c5fd',
     } as CSSProperties,
     statPanel: 'bg-slate-800/80 text-slate-100 border-slate-700',
     tabHover: 'hover:border-blue-300 hover:text-blue-200',
@@ -194,10 +220,16 @@ const DASHBOARD_THEMES: Record<DashboardThemeKey, {
       '--dash-heading': '#f9fafb',
       '--dash-text': '#e5e7eb',
       '--dash-muted': '#b7c0cf',
-      '--dash-subtle': '#818ca0',
+      '--dash-subtle': '#a3adbf',
       '--dash-shadow': 'rgb(0 0 0 / 0.36)',
       '--dash-ring': 'rgb(167 139 250 / 0.24)',
       '--dash-accent': '#a78bfa',
+      '--dash-ink-positive':   '#86efac',
+      '--dash-ink-negative':   '#fdba74',
+      '--dash-ink-complaint':  '#fca5a5',
+      '--dash-ink-suggestion': '#a5b4fc',
+      '--dash-ink-rating':     '#fcd34d',
+      '--dash-ink-info':       '#93c5fd',
     } as CSSProperties,
     statPanel: 'bg-violet-500/10 text-violet-100 border-violet-400/25',
     tabHover: 'hover:border-violet-300 hover:text-violet-200',
@@ -252,18 +284,23 @@ function InsightCard({
   detail: string
   tone?: 'blue' | 'green' | 'amber' | 'red' | 'slate'
 }) {
-  const tones = {
-    blue:  'border-blue-200 bg-blue-50/80 text-blue-700',
-    green: 'border-emerald-200 bg-emerald-50/80 text-emerald-700',
-    amber: 'border-amber-200 bg-amber-50/80 text-amber-700',
-    red:   'border-red-200 bg-red-50/80 text-red-700',
-    slate: 'border-slate-200 bg-slate-50/90 text-slate-700',
-  }
+  // Tone is carried by a small marker and the value's ink colour; the card
+  // itself uses the theme surface so it works in light, day, dark and night.
+  const ink = {
+    blue:  'var(--dash-ink-info)',
+    green: 'var(--dash-ink-positive)',
+    amber: 'var(--dash-ink-rating)',
+    red:   'var(--dash-ink-complaint)',
+    slate: 'var(--dash-heading)',
+  }[tone]
   return (
-    <div className={`rounded-xl border p-3.5 ${tones[tone]}`}>
-      <p className="text-[0.64rem] font-black uppercase tracking-[0.14em] opacity-75">{label}</p>
-      <p className="mt-2 text-xl font-black leading-tight">{value}</p>
-      <p className="mt-1.5 text-xs font-semibold leading-5 opacity-80">{detail}</p>
+    <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-surface)] p-3.5">
+      <p className="flex items-center gap-1.5 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[var(--dash-muted)]">
+        <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ background: ink }} />
+        {label}
+      </p>
+      <p className="mt-2 text-xl font-black leading-tight" style={{ color: ink }}>{value}</p>
+      <p className="mt-1.5 text-xs font-semibold leading-5 text-[var(--dash-text)]">{detail}</p>
     </div>
   )
 }
@@ -309,7 +346,7 @@ function SentimentRow({ sentiment, count, total }: { sentiment: string; count: n
       <div className="flex-1 bg-slate-100 rounded-full h-2.5">
         <div className="h-2.5 rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
       </div>
-      <span className="text-sm font-black w-8 text-right" style={{ color }}>{count}</span>
+      <span className="text-sm font-black w-8 text-right" style={{ color: SENTIMENT_INK[sentiment] ?? 'var(--dash-heading)' }}>{count}</span>
       <span className="text-xs text-slate-500 w-10 text-right">{pct}%</span>
     </div>
   )
@@ -336,10 +373,10 @@ function CategoryRow({ name, data, maxTotal }: {
         {data.suggestion > 0 && <div style={{ width: `${pctSugg}%`, background: '#6366f1' }} title={`Suggestion ${data.suggestion}`} />}
       </div>
       <div className="col-span-2 sm:col-span-1 flex gap-2 text-xs font-bold flex-wrap justify-start sm:justify-end">
-        <span className="text-[#22c55e]">P {data.positive}</span>
-        <span className="text-[#f97316]">N {data.negative}</span>
-        <span className="text-[#ef4444]">C {data.complaint}</span>
-        {data.suggestion > 0 && <span className="text-[#6366f1]">S {data.suggestion}</span>}
+        <span style={{ color: SENTIMENT_INK.positive }}>P {data.positive}</span>
+        <span style={{ color: SENTIMENT_INK.negative }}>N {data.negative}</span>
+        <span style={{ color: SENTIMENT_INK.complaint }}>C {data.complaint}</span>
+        {data.suggestion > 0 && <span style={{ color: SENTIMENT_INK.suggestion }}>S {data.suggestion}</span>}
       </div>
     </div>
   )
@@ -364,10 +401,10 @@ function RatingBar({ rating, count, max }: { rating: number; count: number; max:
 function ShopCard({ shop, rank }: {
   shop: DashboardData['shops'][0]; rank: number
 }) {
-  const scoreColor = !shop.satisfaction ? '#94a3b8'
-    : shop.satisfaction >= 70 ? '#22c55e'
-    : shop.satisfaction >= 45 ? '#eab308'
-    : '#ef4444'
+  const scoreColor = !shop.satisfaction ? 'var(--dash-muted)'
+    : shop.satisfaction >= 70 ? 'var(--dash-ink-positive)'
+    : shop.satisfaction >= 45 ? 'var(--dash-ink-rating)'
+    : 'var(--dash-ink-complaint)'
 
   return (
     <div className={`${surfaceCls} rounded-2xl p-5`}>
@@ -391,14 +428,14 @@ function ShopCard({ shop, rank }: {
       {/* Sentiment split */}
       <div className="flex gap-2 mb-4">
         {[
-          { label: 'Positive',   count: shop.positive,   color: '#22c55e' },
-          { label: 'Negative',   count: shop.negative,   color: '#f97316' },
-          { label: 'Complaint',  count: shop.complaint,  color: '#ef4444' },
-          { label: 'Idea', count: shop.suggestion, color: '#6366f1' },
+          { label: 'Positive',   count: shop.positive,   color: SENTIMENT_COLOR.positive,   ink: SENTIMENT_INK.positive },
+          { label: 'Negative',   count: shop.negative,   color: SENTIMENT_COLOR.negative,   ink: SENTIMENT_INK.negative },
+          { label: 'Complaint',  count: shop.complaint,  color: SENTIMENT_COLOR.complaint,  ink: SENTIMENT_INK.complaint },
+          { label: 'Idea',       count: shop.suggestion, color: SENTIMENT_COLOR.suggestion, ink: SENTIMENT_INK.suggestion },
         ].map((s) => (
           <div key={s.label} className="flex-1 bg-slate-50 rounded-xl p-2.5 text-center border border-slate-100 min-w-0">
             <div className="mx-auto mb-1 h-1.5 w-8 rounded-full" style={{ background: s.color }} />
-            <div className="text-xl font-black" style={{ color: s.color }}>{s.count}</div>
+            <div className="text-xl font-black" style={{ color: s.ink }}>{s.count}</div>
             <div className="text-[0.68rem] font-bold text-slate-500 truncate">{s.label}</div>
           </div>
         ))}
@@ -407,7 +444,7 @@ function ShopCard({ shop, rank }: {
       {/* Avg rating */}
       <div className="flex items-center justify-between mb-3 text-sm">
         <span className="text-slate-500">Avg rating</span>
-        <span className="font-bold text-yellow-400">
+        <span className="font-bold" style={{ color: 'var(--dash-ink-rating)' }}>
           {shop.avgRating !== null ? `${shop.avgRating} / 5` : '—'}
         </span>
       </div>
@@ -439,9 +476,9 @@ function ShopCard({ shop, rank }: {
 
 // ── Status badge + cycle button ────────────────────────────────────────────────
 const STATUS_META: Record<string, { label: string; color: string; next: string; nextLabel: string }> = {
-  pending:   { label: 'Pending',   color: '#f97316', next: 'contacted', nextLabel: 'Mark Contacted' },
+  pending:   { label: 'Pending',   color: '#c2410c', next: 'contacted', nextLabel: 'Mark Contacted' },
   contacted: { label: 'Contacted', color: '#2563eb', next: 'resolved',  nextLabel: 'Mark Resolved'  },
-  resolved:  { label: 'Resolved',  color: '#22c55e', next: 'pending',   nextLabel: 'Reopen'         },
+  resolved:  { label: 'Resolved',  color: '#15803d', next: 'pending',   nextLabel: 'Reopen'         },
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -506,7 +543,7 @@ function PhonePad({ value, onChange }: { value: string; onChange: (v: string) =>
             onClick={() => press(k)}
             className={`py-3 rounded-xl text-base font-semibold transition-colors ${
               k === '⌫'
-                ? 'bg-red-50 text-red-500 hover:bg-red-100 border border-red-200'
+                ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
                 : 'bg-white border border-slate-200 text-slate-800 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 active:scale-95'
             }`}
           >
@@ -561,7 +598,7 @@ function EditContactPanel({
           Saved!
         </div>
       )}
-      {err && <p role="alert" className="text-red-500 text-sm">{err}</p>}
+      {err && <p role="alert" className="text-red-700 text-sm">{err}</p>}
 
       <div>
         <label htmlFor="lead-edit-name" className="block text-xs text-slate-500 mb-1 font-semibold">👤 Name</label>
@@ -677,7 +714,7 @@ function TranscriptModal({
               )}
               <TicketBadge ticketId={review.ticketId} priority={review.ticketPriority} />
               {review.rating && (
-                <span className="text-xs text-yellow-500 font-semibold">{RATING_EMOJI[review.rating]} {review.rating}★</span>
+                <span className="text-xs font-semibold" style={{ color: 'var(--dash-ink-rating)' }}>{RATING_EMOJI[review.rating]} {review.rating}★</span>
               )}
             </div>
             <p className="text-xs text-slate-500 mt-1">
@@ -751,7 +788,7 @@ function TranscriptModal({
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Follow-up Status</p>
                 <StatusBadge status={status} />
                 {saveErr && (
-                  <p className="text-xs text-red-500 font-semibold">{saveErr}</p>
+                  <p role="alert" className="text-xs text-red-700 font-semibold">{saveErr}</p>
                 )}
                 <button onClick={cycleStatus} disabled={saving}
                   className="mt-auto px-3 py-2 text-xs font-semibold rounded-lg bg-slate-900 text-white hover:bg-slate-700 disabled:opacity-40 transition-colors">
@@ -799,7 +836,7 @@ function TranscriptModal({
               <ul className="space-y-1.5">
                 {keyPoints.map((kp, i) => (
                   <li key={i} className="flex gap-2 text-sm text-slate-700">
-                    <span className="text-blue-500 shrink-0 mt-0.5">•</span>
+                    <span className="text-blue-700 shrink-0 mt-0.5" aria-hidden="true">•</span>
                     <span>{kp}</span>
                   </li>
                 ))}
@@ -1005,7 +1042,7 @@ function ReviewsPanel({ reviews: initial }: { reviews: DashboardData['recentRevi
 
           {activeCount > 0 && (
             <button onClick={clearAll}
-              className="px-3 py-2.5 text-xs font-semibold text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 rounded-lg bg-red-50 transition-colors">
+              className="px-3 py-2.5 text-xs font-semibold text-red-700 hover:text-red-800 border border-red-200 hover:border-red-400 rounded-lg bg-red-50 transition-colors">
               ✕ Clear all
             </button>
           )}
@@ -1143,11 +1180,11 @@ function ReviewsPanel({ reviews: initial }: { reviews: DashboardData['recentRevi
                     <StatusBadge status={r.status} />
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {r.rating && <span className="text-xs text-yellow-500 font-semibold">{RATING_EMOJI[r.rating]} {r.rating}★</span>}
+                    {r.rating && <span className="text-xs font-semibold" style={{ color: 'var(--dash-ink-rating)' }}>{RATING_EMOJI[r.rating]} {r.rating}★</span>}
                     <span className="text-xs text-slate-500">
                       {fmtDateTimeShort(r.createdAt)}
                     </span>
-                    <span className="text-xs text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">View →</span>
+                    <span className="text-xs text-blue-700 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">View →</span>
                   </div>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
@@ -1249,7 +1286,7 @@ function SearchPanel() {
       {error && <p className="text-sm text-red-400 mt-2">❌ {error}</p>}
       {result && (
         <div className="mt-4">
-          <div className="bg-blue-50 rounded-xl p-4 mb-4 border-l-4 border-blue-600">
+          <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
             <p className="text-xs text-blue-700 font-bold mb-2 uppercase tracking-widest">AI analysis</p>
             <p className="text-slate-800 text-sm leading-relaxed">{result.answer}</p>
           </div>
@@ -1272,7 +1309,7 @@ function SearchPanel() {
                     )}
                     <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{fmtText(s.summary, 'No summary available')}</p>
                     {s.rating && (
-                      <div className="mt-1.5 text-xs text-yellow-400">{RATING_EMOJI[s.rating]} {s.rating}★</div>
+                      <div className="mt-1.5 text-xs" style={{ color: 'var(--dash-ink-rating)' }}>{RATING_EMOJI[s.rating]} {s.rating}★</div>
                     )}
                   </div>
                 ))}
@@ -1383,15 +1420,15 @@ export function DashboardClient({ data, session }: { data: DashboardData | null;
 
           <div className="grid min-w-[min(100%,23rem)] grid-cols-3 gap-2">
             <div className={`rounded-xl border p-3 ${theme.statPanel}`}>
-              <p className="text-[0.62rem] font-black uppercase tracking-widest opacity-75">Reviews</p>
+              <p className="text-[0.68rem] font-black uppercase tracking-widest">Reviews</p>
               <p className="mt-1.5 text-xl font-black">{totalReviews}</p>
             </div>
             <div className={`rounded-xl border p-3 ${theme.positivePanel}`}>
-              <p className="text-[0.62rem] font-black uppercase tracking-widest opacity-80">Positive</p>
+              <p className="text-[0.68rem] font-black uppercase tracking-widest">Positive</p>
               <p className="mt-1.5 text-xl font-black">{positiveRate}%</p>
             </div>
             <div className={`rounded-xl border p-3 ${theme.queuePanel}`}>
-              <p className="text-[0.62rem] font-black uppercase tracking-widest opacity-80">Queue</p>
+              <p className="text-[0.68rem] font-black uppercase tracking-widest">Queue</p>
               <p className="mt-1.5 text-xl font-black">{pendingFollowUps}</p>
             </div>
           </div>
@@ -1405,7 +1442,7 @@ export function DashboardClient({ data, session }: { data: DashboardData | null;
             <button onClick={() => setTab('reviews')} className={tabBtn(tab === 'reviews')} style={tab === 'reviews' ? { background: theme.accentDark } : undefined}>
               Reviews
               {pendingFollowUps > 0 && (
-                <span className="ml-2 rounded-full bg-orange-500 px-2 py-0.5 text-xs font-black text-white">
+                <span className="ml-2 rounded-full bg-orange-700 px-2 py-0.5 text-xs font-black text-white">
                   {pendingFollowUps}
                 </span>
               )}
@@ -1581,7 +1618,7 @@ export function DashboardClient({ data, session }: { data: DashboardData | null;
                           <p className="text-xs text-slate-500 capitalize">{issue.category}</p>
                         </div>
                         <span className="text-sm font-bold shrink-0"
-                              style={{ color: issue.sentiment === 'complaint' ? '#ef4444' : '#f97316' }}>
+                              style={{ color: issue.sentiment === 'complaint' ? SENTIMENT_INK.complaint : SENTIMENT_INK.negative }}>
                           {issue.count}×
                         </span>
                       </div>
@@ -1604,7 +1641,7 @@ export function DashboardClient({ data, session }: { data: DashboardData | null;
                           <p className="text-sm text-slate-800 capitalize break-words">{s.subcategory}</p>
                           <p className="text-xs text-slate-500 capitalize">{s.category}</p>
                         </div>
-                        <span className="text-sm font-bold text-[#6366f1] shrink-0">{s.count}×</span>
+                        <span className="text-sm font-bold shrink-0" style={{ color: SENTIMENT_INK.suggestion }}>{s.count}×</span>
                       </div>
                     ))}
                   </div>
@@ -1647,7 +1684,7 @@ export function DashboardClient({ data, session }: { data: DashboardData | null;
               {avgRating !== null && (
                 <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
                   <span className="text-sm text-slate-500">Overall Average</span>
-                  <span className="text-lg font-bold text-yellow-500">{avgRating} / 5</span>
+                  <span className="text-lg font-bold" style={{ color: 'var(--dash-ink-rating)' }}>{avgRating} / 5</span>
                 </div>
               )}
             </Card>

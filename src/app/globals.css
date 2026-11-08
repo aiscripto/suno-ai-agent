@@ -36,7 +36,7 @@ html, body {
   --login-accent:       #3B82F6;
   --login-accent-focus: #60A5FA;
   --login-accent-btn:   #2563EB;
-  --login-accent-btn-h: #3B82F6;
+  --login-accent-btn-h: #1D4ED8;
   --login-field-border: rgba(51,65,85,1);
   --login-field-err:    rgba(239,68,68,0.7);
   --login-field-err-f:  #F87171;
@@ -52,8 +52,8 @@ html, body {
   --login-kicker:       #67E8F9;
   --login-accent:       #22D3EE;
   --login-accent-focus: #67E8F9;
-  --login-accent-btn:   #0891B2;
-  --login-accent-btn-h: #06B6D4;
+  --login-accent-btn:   #0E7490;
+  --login-accent-btn-h: #155E75;
   --login-field-border: rgba(51,65,85,1);
   --login-field-err:    rgba(239,68,68,0.7);
   --login-field-err-f:  #F87171;
@@ -406,7 +406,7 @@ html, body {
 .nx-lang-btn:disabled { cursor: not-allowed; opacity: 0.4; }
 .nx-lang-active {
   background: rgba(0,229,255,0.14);
-  color: #00E5FF !important;
+  color: #00E5FF;
   box-shadow: 0 0 8px rgba(0,229,255,0.15);
 }
 
@@ -878,7 +878,7 @@ html, body {
 
 .nx-lang-active {
   background: rgba(var(--nx-accent-rgb), 0.14);
-  color: var(--nx-accent) !important;
+  color: var(--nx-accent);
   box-shadow: 0 0 10px rgba(var(--nx-accent-rgb), 0.16);
 }
 
@@ -3532,3 +3532,141 @@ html, body {
   line-height: 1.4;
   color: var(--nx-text-muted);
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   COLORIZE — every theme is a full theme, every text pair passes AA (2026-11)
+   Surfaces, text and accents come from the --nx-* role tokens that each theme
+   block defines, so nexus / daylight / emerald / ember all re-skin completely.
+   Daylight keeps its own higher-specificity overrides where it has them.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Ground: was a hard-coded navy gradient in every theme */
+.nx-root {
+  background:
+    radial-gradient(ellipse at 14% 0%, rgb(var(--nx-accent-rgb) / 0.10), transparent 40%),
+    radial-gradient(ellipse at 90% 12%, rgb(var(--nx-accent-2-rgb) / 0.08), transparent 42%),
+    linear-gradient(155deg, var(--nx-bg-0) 0%, var(--nx-bg-1) 52%, var(--nx-bg-2) 100%);
+}
+
+/* Header and transcript bubbles follow the theme */
+.nx-header {
+  border-color: var(--nx-line);
+  background: var(--nx-surface);
+}
+.nx-bbl-a {
+  border-color: var(--nx-line);
+  background: var(--nx-agent-bubble);
+  color: var(--nx-text);
+}
+.nx-bbl-u {
+  border-color: rgb(var(--nx-accent-rgb) / 0.32);
+  background: var(--nx-user-bubble);
+  color: var(--nx-text);
+}
+
+/* Brand wordmark (sanctioned gradient text): on the light theme the old
+   near-white first stop made the first word disappear. */
+[data-va-theme="daylight"] .nx-company {
+  background: linear-gradient(130deg, var(--nx-accent) 0%, var(--nx-accent-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Language toggle: inactive option readable, active option unmistakable */
+.nx-lang-btn { color: var(--nx-text-muted); }
+.nx-lang-btn.nx-lang-active {
+  background: var(--nx-accent);
+  color: var(--nx-bg-0);
+  box-shadow: none;
+}
+.nx-lang-btn:disabled { opacity: 0.55; }
+.nx-lang-btn:focus-visible,
+.nx-header-end-btn:focus-visible {
+  outline: 2px solid var(--nx-text);
+  outline-offset: 2px;
+}
+
+/* Small labels that fell just under 4.5:1 */
+.nx-convo-title,
+.nx-countdown-sub,
+.nx-reset-hint,
+.nx-ticket-label,
+.nx-empty-s { color: var(--nx-text-muted); }
+.nx-empty-t { color: var(--nx-text); }
+
+/* End screens: card, message and reference read in every theme */
+.nx-conf-card {
+  border-color: var(--nx-line);
+  background: var(--nx-surface-strong);
+  color: var(--nx-text);
+}
+.nx-conf-msg { color: var(--nx-text-muted); }
+.nx-conf-title { color: var(--nx-accent); }
+[data-va-theme="daylight"] .nx-conf-title { color: var(--nx-accent); }
+.nx-ticket-card {
+  background: var(--nx-surface-soft);
+  color: var(--nx-text);
+}
+.nx-ticket-card strong { color: var(--nx-accent) !important; }
+[data-va-theme="daylight"] .nx-ticket-card strong { color: #163FA3 !important; }
+.nx-send-title { color: var(--nx-text); }
+.nx-send-sub { color: var(--nx-text-muted); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DASHBOARD DARK / NIGHT — complete the tint remap (2026-11)
+   The dark modes already remap Tailwind slate classes; coloured tints
+   (bg-*-50, text-*-700, border-*-200 …) were missed and left light islands and
+   ~1.1:1 text. Generated from the classes the dashboard actually uses:
+   pale tint fills → translucent 400 hue, dark tint text → 300/400 hue
+   (≥ 5.8:1 on the dark surface), pale borders → translucent 400 hue.
+   Solid fills (bg-*-500/600 with white text) keep their light-mode colour.
+   ════════════════════════════════════════════════════════════════════════════ */
+.dash-dashboard[data-dashboard-theme="dark"] .bg-amber-50, .dash-dashboard[data-dashboard-theme="night"] .bg-amber-50 { background-color: rgb(251 191 36 / 0.14) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .bg-blue-50, .dash-dashboard[data-dashboard-theme="night"] .bg-blue-50 { background-color: rgb(96 165 250 / 0.14) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .bg-cyan-50, .dash-dashboard[data-dashboard-theme="night"] .bg-cyan-50 { background-color: rgb(34 211 238 / 0.14) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .bg-emerald-50, .dash-dashboard[data-dashboard-theme="night"] .bg-emerald-50 { background-color: rgb(52 211 153 / 0.14) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .bg-green-50, .dash-dashboard[data-dashboard-theme="night"] .bg-green-50 { background-color: rgb(74 222 128 / 0.14) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .bg-orange-100, .dash-dashboard[data-dashboard-theme="night"] .bg-orange-100 { background-color: rgb(251 146 60 / 0.14) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .bg-red-50, .dash-dashboard[data-dashboard-theme="night"] .bg-red-50 { background-color: rgb(248 113 113 / 0.14) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .border-amber-200, .dash-dashboard[data-dashboard-theme="night"] .border-amber-200 { border-color: rgb(251 191 36 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .border-blue-100, .dash-dashboard[data-dashboard-theme="night"] .border-blue-100 { border-color: rgb(96 165 250 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .border-blue-200, .dash-dashboard[data-dashboard-theme="night"] .border-blue-200 { border-color: rgb(96 165 250 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .border-blue-300, .dash-dashboard[data-dashboard-theme="night"] .border-blue-300 { border-color: rgb(96 165 250 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .border-cyan-100, .dash-dashboard[data-dashboard-theme="night"] .border-cyan-100 { border-color: rgb(34 211 238 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .border-cyan-200, .dash-dashboard[data-dashboard-theme="night"] .border-cyan-200 { border-color: rgb(34 211 238 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .border-emerald-200, .dash-dashboard[data-dashboard-theme="night"] .border-emerald-200 { border-color: rgb(52 211 153 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .border-green-200, .dash-dashboard[data-dashboard-theme="night"] .border-green-200 { border-color: rgb(74 222 128 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .border-orange-200, .dash-dashboard[data-dashboard-theme="night"] .border-orange-200 { border-color: rgb(251 146 60 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .border-red-200, .dash-dashboard[data-dashboard-theme="night"] .border-red-200 { border-color: rgb(248 113 113 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .hover\:bg-blue-50:hover, .dash-dashboard[data-dashboard-theme="night"] .hover\:bg-blue-50:hover { background-color: rgb(96 165 250 / 0.22) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .hover\:bg-red-100:hover, .dash-dashboard[data-dashboard-theme="night"] .hover\:bg-red-100:hover { background-color: rgb(248 113 113 / 0.22) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .hover\:border-blue-200:hover, .dash-dashboard[data-dashboard-theme="night"] .hover\:border-blue-200:hover { border-color: rgb(96 165 250 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .hover\:border-blue-300:hover, .dash-dashboard[data-dashboard-theme="night"] .hover\:border-blue-300:hover { border-color: rgb(96 165 250 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .hover\:border-cyan-300:hover, .dash-dashboard[data-dashboard-theme="night"] .hover\:border-cyan-300:hover { border-color: rgb(34 211 238 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .hover\:border-red-300:hover, .dash-dashboard[data-dashboard-theme="night"] .hover\:border-red-300:hover { border-color: rgb(248 113 113 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .hover\:border-violet-300:hover, .dash-dashboard[data-dashboard-theme="night"] .hover\:border-violet-300:hover { border-color: rgb(167 139 250 / 0.38) !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .hover\:text-blue-500:hover, .dash-dashboard[data-dashboard-theme="night"] .hover\:text-blue-500:hover { color: #60a5fa !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .hover\:text-blue-700:hover, .dash-dashboard[data-dashboard-theme="night"] .hover\:text-blue-700:hover { color: #93c5fd !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .hover\:text-blue-800:hover, .dash-dashboard[data-dashboard-theme="night"] .hover\:text-blue-800:hover { color: #93c5fd !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .hover\:text-cyan-700:hover, .dash-dashboard[data-dashboard-theme="night"] .hover\:text-cyan-700:hover { color: #67e8f9 !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .hover\:text-emerald-600:hover, .dash-dashboard[data-dashboard-theme="night"] .hover\:text-emerald-600:hover { color: #6ee7b7 !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .hover\:text-red-500:hover, .dash-dashboard[data-dashboard-theme="night"] .hover\:text-red-500:hover { color: #f87171 !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .hover\:text-red-800:hover, .dash-dashboard[data-dashboard-theme="night"] .hover\:text-red-800:hover { color: #fca5a5 !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .text-amber-600, .dash-dashboard[data-dashboard-theme="night"] .text-amber-600 { color: #fcd34d !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .text-amber-700, .dash-dashboard[data-dashboard-theme="night"] .text-amber-700 { color: #fcd34d !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .text-blue-600, .dash-dashboard[data-dashboard-theme="night"] .text-blue-600 { color: #93c5fd !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .text-blue-700, .dash-dashboard[data-dashboard-theme="night"] .text-blue-700 { color: #93c5fd !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .text-blue-900, .dash-dashboard[data-dashboard-theme="night"] .text-blue-900 { color: #93c5fd !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .text-cyan-700, .dash-dashboard[data-dashboard-theme="night"] .text-cyan-700 { color: #67e8f9 !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .text-cyan-900, .dash-dashboard[data-dashboard-theme="night"] .text-cyan-900 { color: #67e8f9 !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .text-emerald-600, .dash-dashboard[data-dashboard-theme="night"] .text-emerald-600 { color: #6ee7b7 !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .text-emerald-700, .dash-dashboard[data-dashboard-theme="night"] .text-emerald-700 { color: #6ee7b7 !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .text-green-700, .dash-dashboard[data-dashboard-theme="night"] .text-green-700 { color: #86efac !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .text-orange-700, .dash-dashboard[data-dashboard-theme="night"] .text-orange-700 { color: #fdba74 !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .text-red-600, .dash-dashboard[data-dashboard-theme="night"] .text-red-600 { color: #fca5a5 !important; }
+.dash-dashboard[data-dashboard-theme="dark"] .text-red-700, .dash-dashboard[data-dashboard-theme="night"] .text-red-700 { color: #fca5a5 !important; }
+
+/* Chart axis labels: the hard-coded #64748b was 3.4:1 on the dark surface */
+.dash-dashboard .recharts-cartesian-axis-tick-value,
+.dash-dashboard .recharts-cartesian-axis-tick text { fill: var(--dash-muted); }

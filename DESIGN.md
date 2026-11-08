@@ -150,11 +150,32 @@ A night-sky console lit by one signal colour, with a sober slate palette for ope
 
 ### Status
 - **Alert Red** (#DC2626), **OK Green** (#16A34A), **Warn Amber** (#D97706): complaint severity, SLA state, sentiment. Always paired with a word or icon, never colour alone.
+- **Status badges** (white text on a solid fill) use the 700 shades: Pending `#c2410c`, Contacted `#2563eb`, Resolved `#15803d` (all ≥ 5:1).
+
+### Ink and fill (dashboard)
+Sentiment and category hues come in two roles. **Fill** colours (`#22c55e` positive, `#f97316` negative, `#ef4444` complaint, `#6366f1` suggestion) are for bars, dots and markers only. **Ink** tokens are for text and are defined per dashboard theme so they pass AA on that theme's surface:
+
+| Token | Light / Day | Dark / Night |
+|---|---|---|
+| `--dash-ink-positive` | `#15803d` | `#86efac` |
+| `--dash-ink-negative` | `#c2410c` | `#fdba74` |
+| `--dash-ink-complaint` | `#b91c1c` | `#fca5a5` |
+| `--dash-ink-suggestion` | `#4f46e5` | `#a5b4fc` |
+| `--dash-ink-rating` | `#b45309` | `#fcd34d` |
+| `--dash-ink-info` | `#1d4ed8` | `#93c5fd` |
+
+**The Ink Not Fill Rule.** Never set text in a fill colour. Numbers, labels and counts that carry a sentiment use the `--dash-ink-*` token; the bright fill stays on the bar or dot beside them.
+
+**The No Dimmed Text Rule.** Do not lower text contrast with `opacity-*`; choose the muted/subtle token instead, so the ratio is known.
+
+Dark and night dashboard modes remap Tailwind slate classes and (generated) the pale tint classes the dashboard uses (`bg-*-50/100`, `text-*-500…900`, `border-*-100…300`). New code should prefer `--dash-*` tokens over tint classes, so it themes without the remap.
 
 ### Named Rules
 **The One Signal Rule.** In the widget, the signal accent belongs to the agent: the orb, the live dot, the active turn. Decorative surfaces use translucent tints of it (≤ 0.26 alpha lines), never the full colour.
 
 **The Quiet Classification Rule.** The customer never sees how the agent classified them. The accent stays the tenant/theme colour for the whole call (no red or amber mood shift), and no sentiment, complaint, priority, or captured name/phone appears on the customer's screen. That data belongs to the dashboard.
+
+**The Full Theme Rule.** Each widget theme (nexus, daylight, emerald, ember) re-skins everything through the `--nx-*` role tokens: ground (`--nx-bg-0…2`), surfaces, lines, text tiers, bubbles and accent. No widget rule hard-codes a theme colour; text pairs are checked at ≥ 4.5:1 in all four themes.
 
 **The Tenant Owns the Accent Rule.** Tenant theming flows only through `--va-primary*` and `--nx-accent*` variables. Never hard-code a tenant colour into a component.
 
