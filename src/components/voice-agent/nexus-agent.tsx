@@ -24,15 +24,20 @@ const DEFAULT_COLOR = '#00E5FF'
 const THEMES: VoiceThemeName[] = ['nexus', 'daylight', 'emerald', 'ember']
 
 // ── Status copy ────────────────────────────────────────────────────────────────
-const STATUS: Record<Phase, string> = {
-  connecting:   'Starting up — please wait a moment…',
-  idle:         'Ready — press the button and speak',
-  listening:    'Listening — speak clearly, we are recording',
-  transcribing: 'Processing your voice — please wait…',
-  thinking:     'Preparing your response — please wait…',
-  speaking:     'Agent is speaking — please listen',
-  ended:        'Session complete — thank you',
-  error:        'Something went wrong — see the message above',
+// One line, present tense, says what is happening now. The agent is named so
+// the customer knows who is talking. Words used across the widget:
+// "conversation" (never call/session), "microphone", "tap".
+function statusFor(phase: Phase, agent: string): string {
+  switch (phase) {
+    case 'connecting':   return 'Getting ready…'
+    case 'idle':         return 'Tap the microphone and start talking'
+    case 'listening':    return 'Listening…'
+    case 'transcribing': return 'Catching what you said…'
+    case 'thinking':     return `${agent} is thinking…`
+    case 'speaking':     return `${agent} is speaking`
+    case 'ended':        return 'Thank you'
+    case 'error':        return 'Something went wrong'
+  }
 }
 
 // ── Timing ─────────────────────────────────────────────────────────────────────
@@ -309,7 +314,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
   // Status-text cross-fade: fade out → swap text → fade in on every phase change.
   // Error detail lives in the alert banner, so the status line stays short.
   useEffect(() => {
-    const next = STATUS[phase]
+    const next = statusFor(phase, agentName || 'The agent')
     setStatusOpacity(0)
     const t = setTimeout(() => { setStatusText(next); setStatusOpacity(1) }, 130)
     return () => clearTimeout(t)
@@ -380,10 +385,9 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
         <div className="nx-shop-required">
           <div className="nx-shop-card">
             <div className="nx-shop-icon">AI</div>
-            <h2 className="nx-shop-title">Agent Not Available</h2>
+            <h2 className="nx-shop-title">This device is not set up yet</h2>
             <p className="nx-shop-body">
-              This agent has not been configured for your location.
-              Please contact your administrator.
+              No shop is assigned to this device. Ask your manager to assign one, then sign in again.
             </p>
           </div>
         </div>
@@ -403,14 +407,15 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
-            <h1 className="nx-conf-title nx-conf-title--error">We could not save this</h1>
+            <h1 className="nx-conf-title nx-conf-title--error">Not saved yet</h1>
             <p className="nx-conf-msg">{error ?? 'Your conversation ended, but we could not save it. Please try again.'}</p>
+            <p className="nx-conf-msg">If it keeps failing, please tell a member of staff.</p>
             <div className="nx-end-actions">
               <button type="button" className="nx-action-btn nx-action-btn--primary" onClick={retrySave}>
                 Try again
               </button>
               <button type="button" className="nx-action-btn" onClick={onReset}>
-                Start a new session
+                Start a new conversation
               </button>
             </div>
           </div>
@@ -427,7 +432,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
               <p className="nx-conf-msg">This is taking longer than usual. Please wait a moment.</p>
               <div className="nx-end-actions">
                 <button type="button" className="nx-action-btn" onClick={onReset}>
-                  Start a new session
+                  Start a new conversation
                 </button>
               </div>
             </div>
@@ -450,7 +455,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                   </svg>
                 </div>
               </div>
-              <p className="nx-send-title">Saving your feedback…</p>
+              <p className="nx-send-title">Saving your conversation…</p>
               <p className="nx-send-sub">This only takes a moment.</p>
               <div className="nx-send-dots" aria-hidden="true">
                 <span style={{ background: color }} />
@@ -496,7 +501,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
 
             <div className="nx-end-actions">
               <button type="button" className="nx-action-btn nx-action-btn--primary" onClick={onReset}>
-                Start a new session
+                Start a new conversation
               </button>
               {resetSecs !== null && (
                 <button type="button" className="nx-action-btn" onClick={keepEndScreen}>
@@ -507,8 +512,8 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
 
             <p className="nx-reset-hint" aria-live="off">
               {resetSecs !== null
-                ? <>Starting a new session in {resetSecs}s</>
-                : <>This screen will stay until you start a new session.</>}
+                ? <>A new conversation starts in {resetSecs}s</>
+                : <>This screen stays until you start a new conversation.</>}
             </p>
           </div>
         </div>
@@ -544,7 +549,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
               onDismiss={() => setIdleWarningSecs(null)}
             >
               <p className="nx-dialog-text">
-                To keep the next customer&rsquo;s conversation private, this session restarts
+                To keep the next customer&rsquo;s conversation private, this screen resets
                 in {idleWarningSecs} seconds.
               </p>
               <div className="nx-dialog-actions">
@@ -562,7 +567,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
           {/* ── Incomplete-request prompt ─────────────────────────────────── */}
           {showIncompletePrompt && (
             <NxDialog
-              title="End the call now?"
+              title="End the conversation now?"
               onDismiss={() => setShowIncompletePrompt(false)}
             >
               <p className="nx-dialog-text">
@@ -575,7 +580,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                 </button>
                 <button type="button" className="nx-action-btn nx-action-btn--danger"
                         onClick={() => { setShowIncompletePrompt(false); endCall() }}>
-                  End the call
+                  End conversation
                 </button>
               </div>
             </NxDialog>
@@ -609,13 +614,13 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                 >اردو</button>
               </div>
 
-              <button className="nx-header-end-btn" onClick={handleManualEnd} aria-label="End call">
+              <button className="nx-header-end-btn" onClick={handleManualEnd} aria-label="End conversation">
                 <svg viewBox="0 0 24 24" width="15" height="15" fill="none"
                      stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.13.95.35 1.88.66 2.76a2 2 0 0 1-.45 2.11L8 9.86a16 16 0 0 0 6.14 6.14l1.27-1.27a2 2 0 0 1 2.11-.45c.88.31 1.81.53 2.76.66A2 2 0 0 1 22 16.92z" />
                   <path d="m2 2 20 20" />
                 </svg>
-                <span>End Call</span>
+                <span>End</span>
               </button>
             </div>
           </header>
@@ -680,7 +685,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
               {/* The one place that says what the agent is doing */}
               <p className="nx-status-txt" role="status" aria-live="polite"
                  style={{ opacity: statusOpacity, transition: 'opacity 0.13s ease' }}>
-                {statusText || STATUS[phase]}
+                {statusText || statusFor(phase, agentName || 'The agent')}
               </p>
 
               <div className="nx-btn-wrap">
@@ -758,7 +763,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
               )}
 
               <div className="nx-end-policy">
-                <span className="nx-close-cue">Say thanks or goodbye to close</span>
+                <span className="nx-close-cue">Say goodbye when you are done</span>
               </div>
 
               {/* Text fallback: for a blocked mic, a noisy shop, or anyone who prefers typing */}

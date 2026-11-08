@@ -431,7 +431,7 @@ function ShopCard({ shop, rank }: {
           { label: 'Positive',   count: shop.positive,   color: SENTIMENT_COLOR.positive,   ink: SENTIMENT_INK.positive },
           { label: 'Negative',   count: shop.negative,   color: SENTIMENT_COLOR.negative,   ink: SENTIMENT_INK.negative },
           { label: 'Complaint',  count: shop.complaint,  color: SENTIMENT_COLOR.complaint,  ink: SENTIMENT_INK.complaint },
-          { label: 'Idea',       count: shop.suggestion, color: SENTIMENT_COLOR.suggestion, ink: SENTIMENT_INK.suggestion },
+          { label: 'Suggestion', count: shop.suggestion, color: SENTIMENT_COLOR.suggestion, ink: SENTIMENT_INK.suggestion },
         ].map((s) => (
           <div key={s.label} className="flex-1 bg-slate-50 rounded-xl p-2.5 text-center border border-slate-100 min-w-0">
             <div className="mx-auto mb-1 h-1.5 w-8 rounded-full" style={{ background: s.color }} />
@@ -1244,8 +1244,8 @@ function SearchPanel() {
     <Card className="mb-5">
       <div className="mb-3 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
         <div>
-          <SectionTitle>Review Intelligence</SectionTitle>
-          <p className="text-xs font-semibold text-[var(--dash-muted)]">Ask the review database a business question.</p>
+          <SectionTitle>Ask about your reviews</SectionTitle>
+          <p className="text-xs font-semibold text-[var(--dash-muted)]">Ask in plain English. Answers come from the reviews in this dashboard.</p>
         </div>
         <span className="w-fit rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-widest text-blue-700">
           AI search
@@ -1344,6 +1344,11 @@ export function DashboardClient({ data, session }: { data: DashboardData | null;
   const router = useRouter()
   const [tab, setTab] = useState<'analytics' | 'reviews' | 'shops' | 'reports'>('analytics')
   const [themeKey, setThemeKey] = useState<DashboardThemeKey>('light')
+  // Data is fetched on the server per request, so "as of" is when this page loaded.
+  const [loadedAt, setLoadedAt] = useState<string | null>(null)
+  useEffect(() => {
+    setLoadedAt(new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))
+  }, [data])
 
   useEffect(() => {
     const saved = window.localStorage.getItem('dashboard-theme') as DashboardThemeKey | null
@@ -1407,9 +1412,6 @@ export function DashboardClient({ data, session }: { data: DashboardData | null;
       <div className={`${surfaceCls} mb-5 overflow-hidden rounded-2xl`} style={{ borderTop: `3px solid ${theme.accent}` }}>
         <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[1fr_auto] lg:p-6">
           <div className="min-w-0">
-            <p className="mb-2 text-[0.68rem] font-black uppercase tracking-[0.2em]" style={{ color: theme.accent }}>
-              Customer Experience Intelligence
-            </p>
             <h1 className="max-w-4xl text-2xl font-black leading-tight text-[var(--dash-heading)] sm:text-3xl lg:text-4xl">
               Outlet performance and review analytics
             </h1>
@@ -1458,9 +1460,7 @@ export function DashboardClient({ data, session }: { data: DashboardData | null;
           <div className="flex flex-wrap items-center gap-2.5">
             <ThemeSelector selected={themeKey} onSelect={selectTheme} />
             <div className="flex flex-wrap items-center gap-2.5 text-xs font-bold text-[var(--dash-muted)]">
-              <span>Updated {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-              <span className="hidden h-1 w-1 rounded-full bg-[var(--dash-border)] sm:block" />
-              <span>SQLite demo data</span>
+              {loadedAt && <span>Data as of {loadedAt}</span>}
             </div>
             <button
               onClick={() => router.refresh()}
@@ -1489,12 +1489,9 @@ export function DashboardClient({ data, session }: { data: DashboardData | null;
 
           {/* ── Executive KPIs ──────────────────────────────────────────── */}
           <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
-            <div>
-              <SectionTitle>Executive Summary</SectionTitle>
-              <h2 className="text-xl font-black text-[var(--dash-heading)]">Business health snapshot</h2>
-            </div>
+            <h2 className="text-xl font-black text-[var(--dash-heading)]">Business health</h2>
             <p className="max-w-2xl text-xs font-semibold leading-5 text-[var(--dash-muted)]">
-              The cards below separate volume, customer sentiment, and operational risk for faster management review.
+              Volume, customer sentiment and follow-up risk at a glance.
             </p>
           </div>
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-7">

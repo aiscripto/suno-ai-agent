@@ -48,6 +48,7 @@ A voice-first agent that already knows which branch it is standing in, so it nev
 - Stack: Next.js 15 App Router, React 19, Tailwind 3, Recharts; MongoDB via Mongoose.
 - **Interface language: English only for now.** Spoken conversation is multilingual; UI chrome, dashboard and labels are English.
 - **Accessibility standard: undecided.** No formal target recorded yet.
+- **Customer-facing terms (widget):** *conversation* (never "call" or "session"), *microphone*, *tap*, *your reference* (a server ticket ID; never invent one), the agent's own name (e.g. "Zara is speaking"). In-store failures point to *a member of staff*. Manager-facing terms (dashboard): *review*, *complaint*, *suggestion* (not "idea"), *ticket*, *follow-up*.
 
 ## Brand Commitments
 

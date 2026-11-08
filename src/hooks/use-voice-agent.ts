@@ -23,7 +23,7 @@ import type {
 // Each error gets a kind so the UI can offer the matching recovery action.
 const ERROR_COPY: Record<ErrorKind, string> = {
   mic:     'The microphone is blocked. Allow microphone access in your browser, or type your message instead.',
-  network: 'We lost the connection. Check the internet and try again.',
+  network: 'We lost the connection. Please try again in a moment.',
   limit:   'The service is busy right now. Please try again in a minute.',
   save:    'Your conversation ended, but we could not save it. Please try again.',
   general: 'Something went wrong on our side. Please try again.',
