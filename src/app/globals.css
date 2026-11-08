@@ -2561,13 +2561,13 @@ html, body {
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0;
-  border-color: rgb(var(--nx-accent-rgb) / 0.36) !important;
+  border-color: rgb(var(--nx-accent-rgb) / 0.36);
   background:
     linear-gradient(135deg, rgb(var(--nx-accent-rgb) / 0.22), rgb(var(--nx-accent-2-rgb) / 0.12)),
-    rgb(255 255 255 / 0.075) !important;
+    rgb(255 255 255 / 0.075);
   box-shadow:
     0 0 0 1px rgb(255 255 255 / 0.08) inset,
-    0 16px 36px rgb(var(--nx-accent-rgb) / 0.14) !important;
+    0 16px 36px rgb(var(--nx-accent-rgb) / 0.14);
 }
 
 .nx-close-cue::before {
@@ -2592,8 +2592,8 @@ html, body {
   color: #0f1e38;
   background:
     linear-gradient(135deg, rgb(29 85 217 / 0.13), rgb(13 111 104 / 0.08)),
-    rgb(255 255 255 / 0.86) !important;
-  border-color: rgb(29 85 217 / 0.24) !important;
+    rgb(255 255 255 / 0.86);
+  border-color: rgb(29 85 217 / 0.24);
 }
 
 @media (max-width: 899px) {
@@ -3737,4 +3737,47 @@ html, body {
   /* Dashboard */
   .dash-dashboard .animate-pulse { animation: none; }
   .dash-dashboard [class*="hover:scale"]:hover { transform: none !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   POLISH (2026-11)
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* "Say goodbye when you are done" is guidance, not a control: plain helper
+   text instead of a pill that looked tappable. */
+.nx-dock .nx-close-cue,
+[data-va-theme] .nx-dock .nx-close-cue {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--nx-text-muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.nx-dock .nx-close-cue::before { display: none; }
+
+/* Mic: visible keyboard focus, and a soft shadow so the white glyph holds
+   against the light top of the gradient. */
+.nx-btn:focus-visible {
+  outline: 3px solid var(--nx-text);
+  outline-offset: 6px;
+}
+.nx-dock .nx-bi { filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.45)); }
+
+/* Dashboard: one consistent focus ring for every control. */
+.dash-dashboard :is(a, button, select, [role="tab"], [tabindex]):focus-visible {
+  outline: 2px solid var(--dash-accent);
+  outline-offset: 2px;
+}
+
+/* Logins: the field border alone was 1.95:1 on focus; add a clear ring. */
+.login-dashboard :is(input, select, button):focus-visible,
+.login-agent :is(input, select, button):focus-visible {
+  outline: 2px solid var(--login-accent-focus);
+  outline-offset: 2px;
 }

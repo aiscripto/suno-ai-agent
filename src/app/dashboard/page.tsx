@@ -1,4 +1,4 @@
-import { DashboardClient } from './dashboard-client'
+import { DashboardClient, DASHBOARD_THEME_COOKIE, type DashboardThemeKey } from './dashboard-client'
 import { getDashboardData } from '@/lib/db/dashboard-query'
 import { AUTH_COOKIE, verifySessionToken } from '@/lib/auth/session'
 import { cookies } from 'next/headers'
@@ -14,14 +14,16 @@ export default async function DashboardPage() {
   }
 
   const sessionMeta = { role: session.role, shopId: session.shopId }
+  const savedTheme = cookieStore.get(DASHBOARD_THEME_COOKIE)?.value
+  const initialTheme = (['light', 'day', 'dark', 'night'] as const).find((t) => t === savedTheme) as DashboardThemeKey | undefined
 
   try {
     const data = await getDashboardData({
       shopId: session.role === 'manager' ? session.shopId : null,
     })
-    return <DashboardClient data={data} session={sessionMeta} />
+    return <DashboardClient data={data} session={sessionMeta} initialTheme={initialTheme} />
   } catch (err) {
     console.error('[dashboard page]', err)
-    return <DashboardClient data={null} session={sessionMeta} />
+    return <DashboardClient data={null} session={sessionMeta} initialTheme={initialTheme} />
   }
 }

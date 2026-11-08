@@ -1340,10 +1340,24 @@ function EmptyState() {
 }
 
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
-export function DashboardClient({ data, session }: { data: DashboardData | null; session: Pick<AppSession, 'role' | 'shopId'> }) {
+export type { DashboardThemeKey }
+export const DASHBOARD_THEME_COOKIE = 'dashboard-theme'
+const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
+
+function persistTheme(key: DashboardThemeKey) {
+  // Cookie: lets the server render the saved theme on first paint (no light flash).
+  document.cookie = `${DASHBOARD_THEME_COOKIE}=${key}; path=/; max-age=${THEME_COOKIE_MAX_AGE}; samesite=lax`
+  try { window.localStorage.removeItem('dashboard-theme') } catch { /* storage unavailable */ }
+}
+
+export function DashboardClient({ data, session, initialTheme }: {
+  data: DashboardData | null
+  session: Pick<AppSession, 'role' | 'shopId'>
+  initialTheme?: DashboardThemeKey
+}) {
   const router = useRouter()
   const [tab, setTab] = useState<'analytics' | 'reviews' | 'shops' | 'reports'>('analytics')
-  const [themeKey, setThemeKey] = useState<DashboardThemeKey>('light')
+  const [themeKey, setThemeKey] = useState<DashboardThemeKey>(initialTheme ?? 'light')
   // Data is fetched on the server per request, so "as of" is when this page loaded.
   const [loadedAt, setLoadedAt] = useState<string | null>(null)
   useEffect(() => {
@@ -1351,14 +1365,16 @@ export function DashboardClient({ data, session }: { data: DashboardData | null;
   }, [data])
 
   useEffect(() => {
-    const saved = window.localStorage.getItem('dashboard-theme') as DashboardThemeKey | null
-    if (saved && saved in DASHBOARD_THEMES) setThemeKey(saved)
-    else if (saved) window.localStorage.removeItem('dashboard-theme')
-  }, [])
+    // One-time migration from the old localStorage setting to the cookie.
+    if (initialTheme) return
+    let saved: DashboardThemeKey | null = null
+    try { saved = window.localStorage.getItem('dashboard-theme') as DashboardThemeKey | null } catch { /* storage unavailable */ }
+    if (saved && saved in DASHBOARD_THEMES) { setThemeKey(saved); persistTheme(saved) }
+  }, [initialTheme])
 
   const selectTheme = useCallback((nextTheme: DashboardThemeKey) => {
     setThemeKey(nextTheme)
-    window.localStorage.setItem('dashboard-theme', nextTheme)
+    persistTheme(nextTheme)
   }, [])
 
   if (!data) return <EmptyState />
@@ -1394,7 +1410,7 @@ export function DashboardClient({ data, session }: { data: DashboardData | null;
     : satisfaction >= 70 ? '#22c55e' : satisfaction >= 45 ? '#eab308' : '#ef4444'
   const theme = DASHBOARD_THEMES[themeKey] ?? DASHBOARD_THEMES.light
 
-  const tabBtn = (active: boolean) => `px-4 py-2.5 rounded-xl text-sm font-black transition-colors border ${
+  const tabBtn = (active: boolean) => `shrink-0 whitespace-nowrap px-4 py-2.5 rounded-xl text-sm font-black transition-colors border ${
     active
       ? 'text-white border-transparent shadow-sm'
       : `bg-[var(--dash-input)] text-[var(--dash-text)] border-[var(--dash-border)] ${theme.tabHover}`
@@ -1436,12 +1452,12 @@ export function DashboardClient({ data, session }: { data: DashboardData | null;
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-[var(--dash-border)] bg-[var(--dash-inset)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 lg:px-6">
-          <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
-            <button onClick={() => setTab('analytics')} className={tabBtn(tab === 'analytics')} style={tab === 'analytics' ? { background: theme.accentDark } : undefined}>
+        <div className="flex flex-col gap-3 border-t border-[var(--dash-border)] bg-[var(--dash-inset)] px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+          <div className="flex shrink-0 gap-2 overflow-x-auto pb-1 lg:pb-0" role="tablist" aria-label="Dashboard sections">
+            <button type="button" role="tab" aria-selected={tab === 'analytics'} onClick={() => setTab('analytics')} className={tabBtn(tab === 'analytics')} style={tab === 'analytics' ? { background: theme.accentDark } : undefined}>
               Analytics
             </button>
-            <button onClick={() => setTab('reviews')} className={tabBtn(tab === 'reviews')} style={tab === 'reviews' ? { background: theme.accentDark } : undefined}>
+            <button type="button" role="tab" aria-selected={tab === 'reviews'} onClick={() => setTab('reviews')} className={tabBtn(tab === 'reviews')} style={tab === 'reviews' ? { background: theme.accentDark } : undefined}>
               Reviews
               {pendingFollowUps > 0 && (
                 <span className="ml-2 rounded-full bg-orange-700 px-2 py-0.5 text-xs font-black text-white">
@@ -1449,15 +1465,15 @@ export function DashboardClient({ data, session }: { data: DashboardData | null;
                 </span>
               )}
             </button>
-            <button onClick={() => setTab('shops')} className={tabBtn(tab === 'shops')} style={tab === 'shops' ? { background: theme.accentDark } : undefined}>
+            <button type="button" role="tab" aria-selected={tab === 'shops'} onClick={() => setTab('shops')} className={tabBtn(tab === 'shops')} style={tab === 'shops' ? { background: theme.accentDark } : undefined}>
               Shops
             </button>
-            <button onClick={() => setTab('reports')} className={tabBtn(tab === 'reports')} style={tab === 'reports' ? { background: theme.accentDark } : undefined}>
+            <button type="button" role="tab" aria-selected={tab === 'reports'} onClick={() => setTab('reports')} className={tabBtn(tab === 'reports')} style={tab === 'reports' ? { background: theme.accentDark } : undefined}>
               Reports
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5 lg:justify-end">
             <ThemeSelector selected={themeKey} onSelect={selectTheme} />
             <div className="flex flex-wrap items-center gap-2.5 text-xs font-bold text-[var(--dash-muted)]">
               {loadedAt && <span>Data as of {loadedAt}</span>}

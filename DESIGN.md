@@ -265,6 +265,11 @@ Soft and round. The mic orb, avatar and live dots are perfect circles; chips, fi
 ### Inputs
 - **Widget text fallback:** glass field, accent focus ring. **Dashboard:** white field, slate line border, primary focus ring, 0.5rem radius.
 
+### Focus
+- **Widget:** 2–3px solid `var(--nx-text)` outline with 3–6px offset on every control (mic, actions, language, End, type form).
+- **Dashboard:** 2px `var(--dash-accent)` outline, 2px offset, on every button, tab, link and select; inputs keep their focus ring.
+- **Logins:** 2px `var(--login-accent-focus)` outline in addition to the border colour change.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -275,6 +280,7 @@ Soft and round. The mic orb, avatar and live dots are perfect circles; chips, fi
 - **Do** pair status colours with a word or icon.
 
 ### Don't:
+- **Don't** style guidance text as a pill or button (the close cue is plain helper text).
 - **Don't** recolour the widget or show labels, priorities or contact details based on the agent's classification (The Quiet Classification Rule).
 - **Don't** use glow or gradient text in the dashboard, on numbers, or on body text (The Signal Glow Rule).
 - **Don't** hard-code tenant or theme colours (for example `#00E5FF`) in components; use the variable.
