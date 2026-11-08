@@ -83,12 +83,6 @@ components:
     textColor: "{colors.starlight-text}"
     rounded: "{rounded.mic}"
     size: "82px"
-  status-chip:
-    backgroundColor: "{colors.night-navy}"
-    textColor: "{colors.ok-green}"
-    rounded: "{rounded.pill}"
-    padding: "0.25rem 0.75rem"
-    typography: "{typography.label}"
   agent-bubble:
     backgroundColor: "{colors.night-navy}"
     textColor: "{colors.starlight-text}"
@@ -129,7 +123,7 @@ Tenants change the accent, the agent's name and voice; they never change structu
 **Key Characteristics:**
 - A single glowing focal control (the mic button) per screen in the widget.
 - Dark, layered navy grounds with translucent glass panels; four themes (nexus, daylight, emerald, ember) swap only tokens.
-- Every conversation phase (connecting, idle, listening, transcribing, thinking, speaking, ended, error) has a distinct, visible state.
+- Every conversation phase (connecting, idle, listening, transcribing, thinking, speaking, ended, error) has a distinct state, announced in one status line.
 - Time is visible: the 60 s turn countdown is drawn as an arc around the control (the 120 s session cap is not yet shown).
 - Dashboard: dense, light, legible; 12 px body text, pill filters, rounded cards.
 
@@ -160,6 +154,8 @@ A night-sky console lit by one signal colour, with a sober slate palette for ope
 
 ### Named Rules
 **The One Signal Rule.** In the widget, the signal accent belongs to the agent: the orb, the live dot, the active turn. Decorative surfaces use translucent tints of it (≤ 0.26 alpha lines), never the full colour.
+
+**The Quiet Classification Rule.** The customer never sees how the agent classified them. The accent stays the tenant/theme colour for the whole call (no red or amber mood shift), and no sentiment, complaint, priority, or captured name/phone appears on the customer's screen. That data belongs to the dashboard.
 
 **The Tenant Owns the Accent Rule.** Tenant theming flows only through `--va-primary*` and `--nx-accent*` variables. Never hard-code a tenant colour into a component.
 
@@ -216,12 +212,12 @@ Soft and round. The mic orb, avatar and live dots are perfect circles; chips, fi
 - **Busy (connecting, thinking):** dark navy fill, muted ring, 0.72 opacity, `not-allowed` cursor.
 - **Countdown arc:** only the 60s turn countdown is drawn (with a "0:42 turn left" badge). The 120s session cap is **not shown** in the UI yet (`nexus-agent.tsx:166` is an empty stub).
 
-### Status Chip
-- **Style:** pill, tinted background at 0.10 alpha, 1px border at 0.25 alpha, label type; colour follows phase (green ready, accent listening, amber thinking, red error).
+### Status line
+- **One place for status:** a single `role="status"` line under the agent says what the agent is doing (connecting, listening, thinking, speaking). The button label below the mic only says what tapping does ("Tap to speak", "Tap to send", "Tap to interrupt"). No other element repeats the phase.
 
 ### Transcript Bubbles
 - **Agent:** `--nx-agent-bubble` glass, starlight text, 1rem radius.
-- **User:** accent tint at 0.20 alpha. Hidden tokens never appear in either.
+- **User:** accent tint at 0.20 alpha. Hidden tokens never appear in either. Bubbles use `dir="auto"` so Urdu reads right-to-left.
 
 ### Cards / Panels (widget)
 - **Corner:** 1rem to 22px. **Background:** `--nx-surface` glass with blur. **Border:** `--nx-line`. **Shadow:** console lift.
@@ -240,12 +236,13 @@ Soft and round. The mic orb, avatar and live dots are perfect circles; chips, fi
 
 ### Do:
 - **Do** keep one glowing focal control per widget screen: the mic orb.
-- **Do** give every conversation phase a distinct visual state and a text label.
+- **Do** give every conversation phase a distinct visual state, stated once in the status line.
 - **Do** theme through `--nx-*` and `--va-primary*` variables so all four themes and tenant colours keep working.
 - **Do** keep dashboard numbers in solid colours with the slate text hierarchy.
 - **Do** pair status colours with a word or icon.
 
 ### Don't:
+- **Don't** recolour the widget or show labels, priorities or contact details based on the agent's classification (The Quiet Classification Rule).
 - **Don't** use glow or gradient text in the dashboard, on numbers, or on body text (The Signal Glow Rule).
 - **Don't** hard-code tenant or theme colours (for example `#00E5FF`) in components; use the variable.
 - **Don't** add a second competing glowing element next to the orb.

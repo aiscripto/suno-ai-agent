@@ -10,27 +10,15 @@ import type { VoiceThemeName } from './theme-provider'
 // ── End-state messages per sentiment ──────────────────────────────────────────
 const END_MSG: Record<string, string> = {
   positive:   'That genuinely made our day — thank you for taking the time!',
-  negative:   'Your feedback has been sent to our team.',
-  complaint:  'Your complaint has been sent to our Customer Excellence Team.',
-  suggestion: 'Your suggestion has been sent to our team.',
+  negative:   'Your feedback has reached our team.',
+  complaint:  'Your feedback has reached our team, and they will look into it.',
+  suggestion: 'Your idea has reached our team.',
 }
 
-// ── Mood palette ───────────────────────────────────────────────────────────────
-const MOOD_COLOR: Record<string, string> = {
-  positive:   '#10B981',
-  negative:   '#F59E0B',
-  complaint:  '#F43F5E',
-  suggestion: '#6366F1',
-}
+// The accent stays the tenant/theme colour for the whole call. The agent's
+// classification (sentiment, complaint, lead) is for managers on the dashboard;
+// the customer never sees it reflected in colour or labels.
 const DEFAULT_COLOR = '#00E5FF'
-const mc = (s: string | null) => (s ? MOOD_COLOR[s] ?? DEFAULT_COLOR : DEFAULT_COLOR)
-
-const MOOD_LABEL: Record<string, string> = {
-  positive:   'Positive Experience',
-  negative:   'Negative Feedback',
-  complaint:  'Formal Complaint',
-  suggestion: 'Customer Suggestion',
-}
 
 // ── Theme system ───────────────────────────────────────────────────────────────
 const THEMES: VoiceThemeName[] = ['nexus', 'daylight', 'emerald', 'ember']
@@ -106,7 +94,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
     isRecording, isPlaying,
     agentName, companyName,
     language, setLanguage,
-    reviewData, leadData, callSummary,
+    reviewData, callSummary,
     toggleMic, endCall, sendText, retrySave,
   } = useVoiceAgent({
     tenantId,
@@ -119,7 +107,6 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
   })
 
   const transcriptRef = useRef<HTMLDivElement>(null)
-  const timerRef       = useRef<ReturnType<typeof setInterval> | null>(null)
   const endTimerRef    = useRef<ReturnType<typeof setTimeout>  | null>(null)
   const resetTickRef   = useRef<ReturnType<typeof setInterval> | null>(null)
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -327,7 +314,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
     setTypedText('')
   }
 
-  const color = reviewData.sentiment ? mc(reviewData.sentiment) : themeColor
+  const color = themeColor
   const busy  = phase === 'thinking' || phase === 'transcribing' || phase === 'connecting'
 
   const recordingRemaining = RECORDING_LIMIT_SECS - recordSecs
@@ -474,51 +461,23 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
             </div>
 
             <h1 className="nx-conf-title" style={{ color }}>
-              {reviewData.sentiment === 'positive' ? 'Thank you' : 'Feedback captured'}
+              Thank you
             </h1>
 
             <p className="nx-conf-msg">
               {END_MSG[reviewData.sentiment ?? ''] ?? 'Your message has been sent to our team.'}
             </p>
 
-            {reviewData.sentiment !== 'positive' && (
-              <p className="nx-conf-sub">
-                {ticket
-                  ? 'The responsible team has the ticket, transcript, and contact context.'
-                  : 'The responsible team has the conversation context.'}
-              </p>
-            )}
 
             {ticket && (
               <div className="nx-ticket-card" style={{ borderColor: color + '36' }}>
-                <span className="nx-ticket-label">Your reference</span>
+                <span className="nx-ticket-label">Your reference — our team may use it to follow up</span>
                 <strong style={{ color }}>{ticket.id}</strong>
-                <div className="nx-ticket-meta">
-                  <span>{ticket.type}</span>
-                  <span>{ticket.priority} priority</span>
-                </div>
               </div>
             )}
 
-            <div className="nx-route-list">
-              <span>Transcript secured</span>
-              <span>Insight classified</span>
-              <span>{ticket ? 'Ticket created' : reviewData.sentiment === 'positive' ? 'Experience logged' : 'Team routing prepared'}</span>
-            </div>
 
-            {reviewData.sentiment !== 'positive' && (leadData.name || leadData.phone) && (
-              <div className="nx-conf-contact" style={{ borderColor: color + '30' }}>
-                {leadData.name  && <span style={{ color }}>{leadData.name}</span>}
-                {leadData.phone && <span className="nx-ty-phone">{leadData.phone}</span>}
-              </div>
-            )}
 
-            {reviewData.sentiment && (
-              <span className="nx-ty-badge"
-                    style={{ background: color + '18', color, borderColor: color + '40' }}>
-                {MOOD_LABEL[reviewData.sentiment]}
-              </span>
-            )}
 
             <div className="nx-end-actions">
               <button type="button" className="nx-action-btn nx-action-btn--primary" onClick={onReset}>
@@ -615,7 +574,6 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
               </span>
               <span className="nx-hdr-copy">
                 <span className="nx-company">{companyName || 'Customer Experience'}</span>
-                <span className="nx-hdr-tag">AI Voice Agent</span>
               </span>
             </div>
 
@@ -652,7 +610,6 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
               <section className="nx-agent-panel" style={{ borderColor: color + '26', transition: 'border-color 0.5s ease' }}>
                 <div className="nx-agent-topline">
                   <div className="nx-agent-meta">
-                    <span className="nx-agent-kicker">Experience Intelligence</span>
                     <h1>{agentName || 'Review Agent'}</h1>
                     {shopName && (
                       <span className="nx-shop-badge">
@@ -664,12 +621,6 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                     )}
                   </div>
                 </div>
-                <div className="nx-agent-metrics">
-                  <span>
-                    <strong>{isRecording ? recordingCountdown : formatClock(RECORDING_LIMIT_SECS)}</strong>
-                    turn cap
-                  </span>
-                </div>
               </section>
 
               <div className="nx-orb-section">
@@ -677,7 +628,6 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                   <AnimatedAvatar phase={phase} color={color} size="md" />
                 </div>
 
-                <p className="nx-agent-name">Live AI operator</p>
                 {/* Cross-fade status text so phase transitions don't hard-cut */}
                 <p className="nx-status-txt" role="status" aria-live="polite"
                    style={{ opacity: statusOpacity, transition: 'opacity 0.13s ease' }}>
@@ -685,15 +635,6 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                 </p>
               </div>
 
-              {reviewData.sentiment && (
-                <div className="nx-mood"
-                     style={{ background: color + '12', borderColor: color + '28', transition: 'background 0.5s ease, border-color 0.5s ease' }}>
-                  <span className="nx-mood-dot" style={{ background: color, boxShadow: `0 0 8px ${color}`, transition: 'background 0.5s ease, box-shadow 0.5s ease' }} />
-                  <span style={{ color, fontSize: '0.73rem', fontWeight: 600, transition: 'color 0.5s ease' }}>
-                    {MOOD_LABEL[reviewData.sentiment]}
-                  </span>
-                </div>
-              )}
 
               <div className="nx-btn-zone">
                 <div className="nx-btn-wrap">
@@ -760,14 +701,15 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                   </div>
                 )}
 
-                <p className="nx-btn-lbl">
-                  {isRecording             ? 'Recording active · tap to send'
-                   : phase === 'transcribing' ? 'Processing your voice — please wait…'
-                   : phase === 'thinking'     ? 'Preparing your response — please wait…'
-                   : phase === 'connecting'   ? 'Starting up — please wait…'
-                   : phase === 'speaking'     ? 'Agent is speaking — please listen'
-                   : 'Press the button to start speaking'}
-                </p>
+                {/* Action hint only: what tapping the button does now. The status line
+                    above is the one place that says what the agent is doing. */}
+                {!busy && (
+                  <p className="nx-btn-lbl">
+                    {isRecording ? 'Tap to send'
+                     : phase === 'speaking' ? 'Tap to interrupt'
+                     : 'Tap to speak'}
+                  </p>
+                )}
 
                 <div className="nx-end-policy">
                   <span className="nx-close-cue">Say thanks or goodbye to close</span>
@@ -805,44 +747,8 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
 
             <section className="nx-conversation-panel" style={{ borderColor: color + '26', transition: 'border-color 0.5s ease' }}>
               <div className="nx-conversation-head">
-                <span>Live conversation</span>
-                <span>
-                  {phase === 'error'        ? 'Error — please retry'
-                   : phase === 'transcribing' ? 'Processing…'
-                   : phase === 'thinking'     ? 'Thinking…'
-                   : phase === 'connecting'   ? 'Starting up…'
-                   : 'Live'}
-                </span>
+                <h2>Conversation</h2>
               </div>
-
-              {/* Processing notice — always rendered, fades in/out so there's no layout jump */}
-              {(() => {
-                const isProcessing = phase === 'transcribing' || phase === 'thinking'
-                return (
-                  <div className="flex items-center gap-2.5 px-4 py-2.5 border-b overflow-hidden"
-                       style={{
-                         borderColor:    color + '22',
-                         background:     color + '0a',
-                         maxHeight:      isProcessing ? '48px' : '0px',
-                         opacity:        isProcessing ? 1 : 0,
-                         paddingTop:     isProcessing ? undefined : 0,
-                         paddingBottom:  isProcessing ? undefined : 0,
-                         transition:     'max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease',
-                       }}>
-                    <span className="flex gap-1 shrink-0">
-                      {[0, 150, 300].map((delay) => (
-                        <span key={delay} className="block w-1.5 h-1.5 rounded-full animate-bounce"
-                              style={{ background: color, animationDelay: `${delay}ms`, transition: 'background 0.5s ease' }} />
-                      ))}
-                    </span>
-                    <p className="text-xs font-semibold" style={{ color, transition: 'color 0.5s ease' }}>
-                      {phase === 'transcribing'
-                        ? 'Processing your voice — please wait…'
-                        : 'Preparing your response — please wait…'}
-                    </p>
-                  </div>
-                )
-              })()}
 
               <div ref={transcriptRef} className="nx-transcript scrollbar-thin">
                 {transcript.length === 0 && phase !== 'connecting' && (
@@ -876,15 +782,6 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                 )}
               </div>
 
-              {(leadData.name || leadData.phone) && (
-                <div className="nx-chip">
-                  <svg viewBox="0 0 24 24" className="w-3 h-3 flex-shrink-0"
-                       fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span>{[leadData.name, leadData.phone].filter(Boolean).join(' · ')}</span>
-                </div>
-              )}
             </section>
           </div>
 
