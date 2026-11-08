@@ -64,11 +64,15 @@ export type Phase =
   | 'ended'        // [END_CALL] received
   | 'error'        // unrecoverable error
 
+/** What went wrong, so the UI can offer the right recovery action. */
+export type ErrorKind = 'mic' | 'network' | 'limit' | 'save' | 'general'
+
 export interface VoiceAgentState {
   phase:        Phase
   transcript:   Message[]
   partialReply: string
   error:        string | null
+  errorKind:    ErrorKind | null
   leadData:     LeadData
   reviewData:   ReviewData
   callSummary:  CallSummary | null
@@ -85,7 +89,8 @@ export type VoiceAgentAction =
   | { type: 'REVIEW_UPDATE'; review: ReviewData }
   | { type: 'CALL_SUMMARY'; summary: CallSummary }
   | { type: 'SPEAKING_DONE' }
-  | { type: 'ERROR'; message: string }
+  | { type: 'ERROR'; message: string; kind?: ErrorKind }
+  | { type: 'RETRY_SAVE' }
 
 // ── API Payloads ───────────────────────────────────────────────────────────────
 export interface ConfigResponse {

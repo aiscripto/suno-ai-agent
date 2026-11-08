@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { useModalA11y } from '@/hooks/use-modal-a11y'
 import type { HeatmapCell } from '@/lib/db/report-query'
 
 const CATEGORIES = ['product', 'service', 'behavioral', 'facility', 'pricing', 'general']
@@ -38,6 +39,8 @@ interface Props {
 
 export function IssueHeatMap({ cells }: Props) {
   const [drill, setDrill] = useState<DrillDown | null>(null)
+  const drawerRef = useRef<HTMLDivElement>(null)
+  useModalA11y(drawerRef, drill !== null, () => setDrill(null))
 
   if (cells.length === 0) {
     return (
@@ -101,16 +104,22 @@ export function IssueHeatMap({ cells }: Props) {
                   return (
                     <td
                       key={cat}
-                      className={`border border-[var(--dash-border)] text-center cursor-pointer transition-transform hover:scale-[1.08] hover:shadow-md hover:z-10 relative ${
-                        count === 0 ? 'cursor-default' : ''
-                      }`}
+                      className="border border-[var(--dash-border)] text-center relative p-0"
                       style={{ background: cellBg(count, max) }}
-                      onClick={() => count > 0 && cell && setDrill({ cell })}
-                      title={count > 0 ? `${shopNames[shopId]} · ${CATEGORY_LABEL[cat]}: ${count} issues — click to drill down` : undefined}
                     >
-                      <span className={`block py-3 px-2 text-sm font-black ${cellText(count, max)}`}>
-                        {count > 0 ? count : ''}
-                      </span>
+                      {count > 0 && cell ? (
+                        <button
+                          type="button"
+                          onClick={() => setDrill({ cell })}
+                          aria-label={`${shopNames[shopId]}, ${CATEGORY_LABEL[cat]}: ${count} issues. Show details`}
+                          title={`${shopNames[shopId]} · ${CATEGORY_LABEL[cat]}: ${count} issues — click to drill down`}
+                          className={`block w-full py-3 px-2 text-sm font-black transition-transform hover:scale-[1.08] hover:shadow-md hover:z-10 relative focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--dash-heading)] ${cellText(count, max)}`}
+                        >
+                          {count}
+                        </button>
+                      ) : (
+                        <span className="block py-3 px-2" aria-label="0 issues" />
+                      )}
                     </td>
                   )
                 })}
@@ -136,7 +145,7 @@ export function IssueHeatMap({ cells }: Props) {
             {t === 1 && <span className="text-[0.6rem] text-[var(--dash-muted)]">{max}</span>}
           </div>
         ))}
-        <span className="ml-2 text-[0.6rem] text-[var(--dash-muted)]">Click a cell to drill down</span>
+        <span className="ml-2 text-[0.6rem] text-[var(--dash-muted)]">Select a cell to see its conversations</span>
       </div>
 
       {/* ── Drill-down drawer ──────────────────────────────────────────────────── */}
@@ -146,13 +155,14 @@ export function IssueHeatMap({ cells }: Props) {
           onClick={(e) => e.target === e.currentTarget && setDrill(null)}
           style={{ background: 'rgba(0,0,0,0.35)' }}
         >
-          <div className="h-full w-full max-w-md overflow-y-auto bg-[var(--dash-surface)] shadow-2xl flex flex-col">
+          <div ref={drawerRef} role="dialog" aria-modal="true" aria-labelledby="heatmap-drill-title" tabIndex={-1}
+               className="h-full w-full max-w-md overflow-y-auto bg-[var(--dash-surface)] shadow-2xl flex flex-col">
             <div className="flex items-center justify-between border-b border-[var(--dash-border)] px-5 py-4">
               <div>
                 <p className="text-[0.62rem] font-black uppercase tracking-widest text-[var(--dash-muted)]">
                   Drill-down
                 </p>
-                <h3 className="text-base font-black text-[var(--dash-heading)] leading-tight">
+                <h3 id="heatmap-drill-title" className="text-base font-black text-[var(--dash-heading)] leading-tight">
                   {drill.cell.shopName}
                 </h3>
                 <p className="text-sm font-bold text-[var(--dash-muted)]">
@@ -162,9 +172,10 @@ export function IssueHeatMap({ cells }: Props) {
               <button
                 type="button"
                 onClick={() => setDrill(null)}
-                className="rounded-full border border-[var(--dash-border)] bg-[var(--dash-input)] p-2 text-[var(--dash-muted)] hover:text-red-500 transition-colors"
+                aria-label="Close details"
+                className="rounded-full border border-[var(--dash-border)] bg-[var(--dash-input)] p-2.5 text-[var(--dash-muted)] hover:text-red-500 transition-colors"
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useState, useCallback, type CSSProperties } from 'react'
+import { useRef, useEffect, useState, useCallback, useId, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import { useVoiceAgent }    from '@/hooks/use-voice-agent'
 import { useTypingSound }   from '@/hooks/use-typing-sound'
 import { AnimatedAvatar }   from './avatar'
@@ -44,8 +44,15 @@ const STATUS: Record<Phase, string> = {
   thinking:     'Preparing your response — please wait…',
   speaking:     'Agent is speaking — please listen',
   ended:        'Session complete — thank you',
-  error:        'Something went wrong — please try again',
+  error:        'Something went wrong — see the message above',
 }
+
+// ── Timing ─────────────────────────────────────────────────────────────────────
+const IDLE_WARNING_AFTER_MS = 60_000   // silence before we ask "are you still there?"
+const IDLE_WARNING_SECS     = 15       // grace period on that question before reset
+const SAVE_SLOW_AFTER_MS    = 20_000   // when "saving" starts to feel stuck
+const RESET_SECS_WITH_TICKET = 20      // long enough to note a ticket ID
+const RESET_SECS_DEFAULT     = 10
 
 // ── Public interface ───────────────────────────────────────────────────────────
 interface Props { tenantId?: string; token?: string; shopCode?: string; shopName?: string }
@@ -95,12 +102,12 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
   const validShop = Boolean(shopCode)
 
   const {
-    phase, transcript, partialReply, error,
+    phase, transcript, partialReply, error, errorKind,
     isRecording, isPlaying,
     agentName, companyName,
     language, setLanguage,
     reviewData, leadData, callSummary,
-    toggleMic, endCall,
+    toggleMic, endCall, sendText, retrySave,
   } = useVoiceAgent({
     tenantId,
     token,
@@ -122,14 +129,21 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
 
   const [recordSecs,           setRecordSecs]           = useState(0)
   const [endStep,              setEndStep]              = useState<'sending' | 'confirmed' | null>(null)
-  const [resetSecs,            setResetSecs]            = useState(5)
+  // null = countdown paused by the user ("Keep this screen")
+  const [resetSecs,            setResetSecs]            = useState<number | null>(RESET_SECS_DEFAULT)
+  const [saveSlow,             setSaveSlow]             = useState(false)
   const [themeColor,           setThemeColor]           = useState(DEFAULT_COLOR)
   const [showIncompletePrompt, setShowIncompletePrompt] = useState(false)
-  const [callTimedOut,         setCallTimedOut]         = useState(false)
+  // Seconds left on the "Are you still there?" question; null = not shown
+  const [idleWarningSecs,      setIdleWarningSecs]      = useState<number | null>(null)
+  const [typeOpen,             setTypeOpen]             = useState(false)
+  const [typedText,            setTypedText]            = useState('')
   // Status-text fade: track displayed text separately so we can cross-fade
   const [statusText,           setStatusText]           = useState('')
   const [statusOpacity,        setStatusOpacity]        = useState(1)
-  const sessionRef = useRef(`CX-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Date.now().toString(36).slice(-4).toUpperCase()}`)
+
+  const spokenTurns     = transcript.filter((m) => m.role === 'user').length
+  const hasCustomerTurn = spokenTurns > 0
 
   useEffect(() => {
     endCallRef.current = endCall
@@ -205,13 +219,26 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
   const { onTextGrow } = useTypingSound(true)
   useEffect(() => { onTextGrow(partialReply) }, [partialReply, onTextGrow])
 
+  // Timers are owned by this component instance; clear them only on unmount.
+  // (Clearing them on every phase change is what used to strand the end screen.)
+  useEffect(() => () => {
+    if (endTimerRef.current)  clearTimeout(endTimerRef.current)
+    if (resetTickRef.current) clearInterval(resetTickRef.current)
+  }, [])
+
   // Interval only decrements — never calls onReset() inside a state updater
   // (calling a parent setState inside a child updater violates React's rules).
-  function startResetCountdown() {
-    setResetSecs(5)
+  function startResetCountdown(secs: number) {
+    if (resetTickRef.current) clearInterval(resetTickRef.current)
+    setResetSecs(secs)
     resetTickRef.current = setInterval(() => {
-      setResetSecs(s => Math.max(0, s - 1))
+      setResetSecs(s => (s === null ? null : Math.max(0, s - 1)))
     }, 1000)
+  }
+
+  function keepEndScreen() {
+    if (resetTickRef.current) { clearInterval(resetTickRef.current); resetTickRef.current = null }
+    setResetSecs(null)
   }
 
   // onReset fires in an effect (post-render), not inside the updater
@@ -222,52 +249,38 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
     }
   }, [resetSecs, endStep, onReset])
 
-  // Step 1 — flip to end screen only AFTER agent stops speaking.
-  // phase='ended' while isPlaying=true means the final sentence is still playing.
-  // We wait for isPlaying→false before showing the sending/confirmed screen so
-  // there is no jarring cut while the agent is still mid-sentence.
+  // Step 1 — once the call has ended AND the agent has finished its last
+  // sentence, show "Saving…". Every path (positive or not) waits for the save
+  // result; nothing is confirmed before the server has confirmed it.
   useEffect(() => {
-    if (phase !== 'ended') return
-    if (isPlaying) return                  // wait — agent still talking
-    const isPositive = reviewData.sentiment === 'positive'
-    if (isPositive) {
-      endTimerRef.current = setTimeout(() => {
-        setEndStep('confirmed')
-        startResetCountdown()
-      }, 400)
-    } else {
-      setEndStep('sending')
-      // Safety fallback: if API never responds, advance after 12 s
-      endTimerRef.current = setTimeout(() => {
-        setEndStep((s) => {
-          if (s === 'sending') { startResetCountdown(); return 'confirmed' }
-          return s
-        })
-      }, 12_000)
-    }
-    return () => {
-      if (endTimerRef.current)  clearTimeout(endTimerRef.current)
-      if (resetTickRef.current) clearInterval(resetTickRef.current)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, isPlaying])
+    // A save error can arrive before the end screen opened (e.g. while the last
+    // sentence was still playing); it must still land on the end screen.
+    const callOver = phase === 'ended' || errorKind === 'save'
+    if (!callOver || isPlaying || endStep !== null) return
+    // Nothing was said, so nothing is being saved: start fresh instead of
+    // showing a "saving" screen that would never resolve.
+    if (!hasCustomerTurn) { onReset(); return }
+    setEndStep('sending')
+  }, [phase, errorKind, isPlaying, endStep, hasCustomerTurn, onReset])
 
-  // P3-A: save failed — cancel the 12 s fallback so we never auto-confirm a failure
+  // While saving, flag it as slow after a while so the screen can say so
+  // honestly (and offer a way out) instead of pretending it succeeded.
   useEffect(() => {
-    if (phase === 'error' && endStep === 'sending') {
-      if (endTimerRef.current) { clearTimeout(endTimerRef.current); endTimerRef.current = null }
-    }
-  }, [phase, endStep])
+    if (endStep !== 'sending' || phase !== 'ended') { setSaveSlow(false); return }
+    const t = setTimeout(() => setSaveSlow(true), SAVE_SLOW_AFTER_MS)
+    return () => clearTimeout(t)
+  }, [endStep, phase])
 
-  // Step 2 — callSummary arrives from API: hold 2.5 s then show confirmed.
+  // Step 2 — the save succeeded: brief hold, then the confirmation screen.
   useEffect(() => {
     if (endStep !== 'sending' || !callSummary) return
-    if (endTimerRef.current) clearTimeout(endTimerRef.current)  // cancel fallback
+    const hold = reviewData.sentiment === 'positive' ? 400 : 1500
     endTimerRef.current = setTimeout(() => {
       setEndStep('confirmed')
-      startResetCountdown()
-    }, 2500)
+      startResetCountdown(callSummary.ticket ? RESET_SECS_WITH_TICKET : RESET_SECS_DEFAULT)
+    }, hold)
     return () => { if (endTimerRef.current) clearTimeout(endTimerRef.current) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callSummary, endStep])
 
   // Dismiss incomplete prompt automatically if the user picks up the mic again
@@ -275,32 +288,46 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
     if (phase !== 'idle') setShowIncompletePrompt(false)
   }, [phase])
 
-  // Idle timeout — restart the session if the user is silent for 60 s.
-  // Timer resets each time phase leaves 'idle' (user starts speaking / agent responds).
+  // Idle — after 60 s of silence, ask "Are you still there?" instead of wiping
+  // the session. Any activity (or the question being answered) cancels it.
   useEffect(() => {
     if (idleTimerRef.current) { clearTimeout(idleTimerRef.current); idleTimerRef.current = null }
-    if (phase !== 'idle' || endStep !== null) return
-    idleTimerRef.current = setTimeout(() => setCallTimedOut(true), 60_000)
+    if (phase !== 'idle' || endStep !== null || typeOpen) { setIdleWarningSecs(null); return }
+    idleTimerRef.current = setTimeout(() => setIdleWarningSecs(IDLE_WARNING_SECS), IDLE_WARNING_AFTER_MS)
     return () => { if (idleTimerRef.current) { clearTimeout(idleTimerRef.current); idleTimerRef.current = null } }
-  }, [phase, endStep])
+  }, [phase, endStep, typeOpen])
 
-  // Auto-restart 3 s after timeout notice is shown.
+  // Count the question down; reset only if nobody answers it.
   useEffect(() => {
-    if (!callTimedOut) return
-    const t = setTimeout(() => { setCallTimedOut(false); onReset() }, 3_000)
+    if (idleWarningSecs === null) return
+    if (idleWarningSecs <= 0) { setIdleWarningSecs(null); onReset(); return }
+    const t = setTimeout(() => setIdleWarningSecs(s => (s === null ? null : s - 1)), 1000)
     return () => clearTimeout(t)
-  }, [callTimedOut, onReset])
+  }, [idleWarningSecs, onReset])
+
+  // A blocked microphone means the customer can only continue by typing.
+  useEffect(() => {
+    if (errorKind === 'mic') setTypeOpen(true)
+  }, [errorKind])
 
   // Status-text cross-fade: fade out → swap text → fade in on every phase change.
+  // Error detail lives in the alert banner, so the status line stays short.
   useEffect(() => {
-    const next = error && phase === 'error' ? error : STATUS[phase]
+    const next = STATUS[phase]
     setStatusOpacity(0)
     const t = setTimeout(() => { setStatusText(next); setStatusOpacity(1) }, 130)
     return () => clearTimeout(t)
-  }, [phase, error])
+  }, [phase])
+
+  function submitTyped(e: FormEvent) {
+    e.preventDefault()
+    const text = typedText.trim()
+    if (!text) return
+    sendText(text)
+    setTypedText('')
+  }
 
   const color = reviewData.sentiment ? mc(reviewData.sentiment) : themeColor
-  const ended = phase === 'ended'
   const busy  = phase === 'thinking' || phase === 'transcribing' || phase === 'connecting'
 
   const recordingRemaining = RECORDING_LIMIT_SECS - recordSecs
@@ -311,10 +338,10 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
   const CIRC = 2 * Math.PI * R
   const dash = CIRC * (recordSecs / RECORDING_LIMIT_SECS)
   const agentInitial = (agentName || 'AI').trim().charAt(0).toUpperCase()
-  const spokenTurns = transcript.filter((m) => m.role === 'user').length
-  const hasCustomerTurn = spokenTurns > 0
-  const branchLabel = shopCode ? shopCode.toUpperCase() : 'Global'
   const ticket = callSummary?.ticket ?? null
+  // After the call ends, an error can only mean the save failed.
+  const saveFailed = endStep !== null && phase === 'error'
+  const canType = phase === 'idle' || phase === 'error'
   const handleManualEnd = useCallback(() => {
     // Already ending — nothing to do
     if (phase === 'ended' || endStep !== null) return
@@ -361,32 +388,52 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
         </div>
       )}
 
-      {/* ════ STEP 1: SENDING (or save-failed) ══════════════════════════ */}
-      {/* P2-D: keyed off endStep, not 'ended', so save errors show here  */}
-      {validShop && endStep === 'sending' && (
+      {/* ════ SAVE FAILED ═══════════════════════════════════════════════ */}
+      {/* Any error after the call ended is a failed save. Shown whatever     */}
+      {/* end step we were on, so the screen can never be left without controls. */}
+      {validShop && saveFailed && (
         <div className="nx-end-screen">
-          {phase === 'error' ? (
-            /* ── Save failed — show error in context, never auto-confirm ── */
-            <div className="nx-conf-card" style={{ borderColor: '#F43F5E33' }}>
-              <div className="nx-conf-icon" style={{ borderColor: '#F43F5E50', color: '#F43F5E' }}>
-                <svg viewBox="0 0 24 24" className="w-10 h-10" fill="none"
-                     stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-              </div>
-              <h1 className="nx-conf-title" style={{ color: '#F43F5E' }}>Save Failed</h1>
-              <p className="nx-conf-msg">{error ?? 'Your feedback could not be saved. Please try again.'}</p>
-              <button className="nx-new-btn" onClick={onReset}
-                      style={{ borderColor: '#F43F5E50', color: '#F43F5E' }}>
-                Start New Session
+          <div className="nx-conf-card nx-conf-card--error" role="alert">
+            <div className="nx-conf-icon nx-conf-icon--error">
+              <svg viewBox="0 0 24 24" className="w-10 h-10" fill="none" aria-hidden="true"
+                   stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h1 className="nx-conf-title nx-conf-title--error">We could not save this</h1>
+            <p className="nx-conf-msg">{error ?? 'Your conversation ended, but we could not save it. Please try again.'}</p>
+            <div className="nx-end-actions">
+              <button type="button" className="nx-action-btn nx-action-btn--primary" onClick={retrySave}>
+                Try again
               </button>
+              <button type="button" className="nx-action-btn" onClick={onReset}>
+                Start a new session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════ STEP 1: SAVING ════════════════════════════════════════════ */}
+      {validShop && endStep === 'sending' && !saveFailed && (
+        <div className="nx-end-screen" role="status" aria-live="polite">
+          {saveSlow ? (
+            /* ── Taking too long: say so, and let the customer move on ── */
+            <div className="nx-conf-card">
+              <h1 className="nx-conf-title">Still saving…</h1>
+              <p className="nx-conf-msg">This is taking longer than usual. Please wait a moment.</p>
+              <div className="nx-end-actions">
+                <button type="button" className="nx-action-btn" onClick={onReset}>
+                  Start a new session
+                </button>
+              </div>
             </div>
           ) : (
             /* ── Normal sending animation ── */
             <>
-              <div className="nx-send-wrap">
+              <div className="nx-send-wrap" aria-hidden="true">
                 <div className="nx-send-ring nx-sr1" style={{ borderColor: color }} />
                 <div className="nx-send-ring nx-sr2" style={{ borderColor: color }} />
                 <div className="nx-send-ring nx-sr3" style={{ borderColor: color }} />
@@ -402,9 +449,9 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                   </svg>
                 </div>
               </div>
-              <p className="nx-send-title">Routing conversation packet</p>
-              <p className="nx-send-sub">Securing transcript, classification, and contact details</p>
-              <div className="nx-send-dots">
+              <p className="nx-send-title">Saving your feedback…</p>
+              <p className="nx-send-sub">This only takes a moment.</p>
+              <div className="nx-send-dots" aria-hidden="true">
                 <span style={{ background: color }} />
                 <span style={{ background: color }} />
                 <span style={{ background: color }} />
@@ -415,7 +462,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
       )}
 
       {/* ════ STEP 2: CONFIRMED ══════════════════════════════════════════ */}
-      {validShop && ended && endStep === 'confirmed' && (
+      {validShop && endStep === 'confirmed' && !saveFailed && (
         <div className="nx-end-screen">
           <div className="nx-conf-card">
 
@@ -444,7 +491,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
 
             {ticket && (
               <div className="nx-ticket-card" style={{ borderColor: color + '36' }}>
-                <span className="nx-ticket-label">Ticket ID</span>
+                <span className="nx-ticket-label">Your reference</span>
                 <strong style={{ color }}>{ticket.id}</strong>
                 <div className="nx-ticket-meta">
                   <span>{ticket.type}</span>
@@ -457,11 +504,6 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
               <span>Transcript secured</span>
               <span>Insight classified</span>
               <span>{ticket ? 'Ticket created' : reviewData.sentiment === 'positive' ? 'Experience logged' : 'Team routing prepared'}</span>
-            </div>
-
-            <div className="nx-ref-code">
-              <span>{ticket ? 'Session reference' : 'Reference'}</span>
-              <strong>{ticket?.id ?? sessionRef.current}</strong>
             </div>
 
             {reviewData.sentiment !== 'positive' && (leadData.name || leadData.phone) && (
@@ -478,85 +520,91 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
               </span>
             )}
 
-            <button className="nx-new-btn" onClick={onReset}
-                    style={{ borderColor: color + '50', color }}>
-              New Message
-            </button>
+            <div className="nx-end-actions">
+              <button type="button" className="nx-action-btn nx-action-btn--primary" onClick={onReset}>
+                Start a new session
+              </button>
+              {resetSecs !== null && (
+                <button type="button" className="nx-action-btn" onClick={keepEndScreen}>
+                  Keep this screen
+                </button>
+              )}
+            </div>
 
-            <p className="nx-reset-hint">
-              Auto-reset in <span style={{ color }}>{resetSecs}s</span>
+            <p className="nx-reset-hint" aria-live="off">
+              {resetSecs !== null
+                ? <>Starting a new session in {resetSecs}s</>
+                : <>This screen will stay until you start a new session.</>}
             </p>
           </div>
         </div>
       )}
 
       {/* ════ MAIN UI ══════════════════════════════════════════════════════ */}
-      {/* P2-D: gate on endStep===null, not !ended, so error phase after a save  */}
-      {/* failure stays on the end screen rather than regressing to voice UI.    */}
+      {/* Gate on endStep===null so a save failure stays on the end screen    */}
+      {/* rather than regressing to the voice UI.                              */}
       {validShop && endStep === null && (
         <div className="nx-content relative">
 
           {/* ── Error banner ────────────────────────────────────────────── */}
           {phase === 'error' && error && (
-            <div className="nx-err-banner">
-              {error.includes('quota') || error.includes('429')
-                ? <>Service limit reached — please try again later</>
-                : <>{error}</>}
+            <div className="nx-err-banner" role="alert">
+              <span className="nx-err-text">{error}</span>
+              {errorKind === 'mic' && !typeOpen && (
+                <button type="button" className="nx-err-action" onClick={() => setTypeOpen(true)}>
+                  Type instead
+                </button>
+              )}
+              {(errorKind === 'network' || errorKind === 'general') && (
+                <button type="button" className="nx-err-action" onClick={toggleMic}>
+                  Try again
+                </button>
+              )}
             </div>
           )}
 
-          {/* ── Idle-timeout overlay ─────────────────────────────────────── */}
-          {callTimedOut && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center"
-                 style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)' }}>
-              <div className="flex flex-col items-center gap-3 px-8 py-7 rounded-2xl border text-center"
-                   style={{ background: 'var(--nx-surface, #0f1923)', borderColor: color + '40', maxWidth: '320px' }}>
-                <svg viewBox="0 0 24 24" className="w-10 h-10 opacity-60" fill="none"
-                     stroke={color} strokeWidth="1.8" strokeLinecap="round">
-                  <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-                </svg>
-                <p className="text-sm font-black text-white">Session Timed Out</p>
-                <p className="text-xs font-semibold" style={{ color: color + 'cc' }}>
-                  No activity detected for 60 seconds. Starting a new session…
-                </p>
+          {/* ── Idle check: ask before wiping the session ─────────────────── */}
+          {idleWarningSecs !== null && (
+            <NxDialog
+              title="Are you still there?"
+              onDismiss={() => setIdleWarningSecs(null)}
+            >
+              <p className="nx-dialog-text">
+                To keep the next customer&rsquo;s conversation private, this session restarts
+                in {idleWarningSecs} seconds.
+              </p>
+              <div className="nx-dialog-actions">
+                <button type="button" className="nx-action-btn nx-action-btn--primary"
+                        data-autofocus onClick={() => setIdleWarningSecs(null)}>
+                  I&rsquo;m still here
+                </button>
+                <button type="button" className="nx-action-btn" onClick={onReset}>
+                  Start over
+                </button>
               </div>
-            </div>
+            </NxDialog>
           )}
 
           {/* ── Incomplete-request prompt ─────────────────────────────────── */}
           {showIncompletePrompt && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center"
-                 style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)' }}>
-              <div className="flex flex-col gap-4 px-8 py-7 rounded-2xl border"
-                   style={{ background: 'var(--nx-surface, #0f1923)', borderColor: color + '40', maxWidth: '320px', width: '100%' }}>
-                <div className="flex flex-col gap-1.5">
-                  <p className="text-sm font-black text-white">Request Incomplete</p>
-                  <p className="text-xs font-semibold leading-relaxed" style={{ color: color + 'bb' }}>
-                    Your feedback has not been fully captured yet. Please share your experience so
-                    we can route it to the right team.
-                  </p>
-                  <p className="text-xs font-semibold leading-relaxed text-slate-400 mt-1">
-                    Would you still like to end the call?
-                  </p>
-                </div>
-                <div className="flex gap-3 mt-1">
-                  <button
-                    onClick={() => { setShowIncompletePrompt(false); endCall() }}
-                    className="flex-1 rounded-xl py-2.5 text-xs font-black text-white border transition-colors hover:opacity-80"
-                    style={{ borderColor: '#F43F5E55', background: '#F43F5E18', color: '#F43F5E' }}
-                  >
-                    Yes, End Call
-                  </button>
-                  <button
-                    onClick={() => setShowIncompletePrompt(false)}
-                    className="flex-1 rounded-xl py-2.5 text-xs font-black border transition-colors hover:opacity-80"
-                    style={{ borderColor: color + '55', background: color + '14', color }}
-                  >
-                    No, Continue
-                  </button>
-                </div>
+            <NxDialog
+              title="End the call now?"
+              onDismiss={() => setShowIncompletePrompt(false)}
+            >
+              <p className="nx-dialog-text">
+                We have not fully understood your feedback yet, so it may not reach the right team.
+              </p>
+              <div className="nx-dialog-actions">
+                <button type="button" className="nx-action-btn nx-action-btn--primary"
+                        data-autofocus onClick={() => setShowIncompletePrompt(false)}>
+                  Keep talking
+                </button>
+                <button type="button" className="nx-action-btn nx-action-btn--danger"
+                        onClick={() => { setShowIncompletePrompt(false); endCall() }}>
+                  End the call
+                </button>
               </div>
-            </div>
+            </NxDialog>
           )}
 
           {/* ── Header ──────────────────────────────────────────────────── */}
@@ -584,6 +632,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                   onClick={() => setLanguage('Urdu')}
                   disabled={isRecording}
                   aria-pressed={language.toLowerCase() === 'urdu'}
+                  lang="ur" dir="rtl" aria-label="Urdu"
                 >اردو</button>
               </div>
 
@@ -673,7 +722,9 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                     disabled={busy}
                     className={`nx-btn ${isRecording ? 'nx-btn-rec' : busy ? 'nx-btn-busy' : 'nx-btn-idle'}`}
                     style={isRecording ? ({ '--nx-rec-color': color } as CSSProperties) : undefined}
-                    aria-label={isRecording ? 'Stop recording' : 'Start recording'}
+                    aria-label={isRecording ? 'Stop recording and send'
+                      : phase === 'speaking' ? 'Interrupt the agent'
+                      : 'Start recording'}
                   >
                     {isRecording ? (
                       <>
@@ -721,6 +772,33 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                 <div className="nx-end-policy">
                   <span className="nx-close-cue">Say thanks or goodbye to close</span>
                 </div>
+
+                {/* Text fallback: for a blocked mic, a noisy shop, or anyone who prefers typing */}
+                {typeOpen ? (
+                  <form className="nx-type-form" onSubmit={submitTyped}>
+                    <label htmlFor="nx-type-input" className="sr-only">Type your message</label>
+                    <input
+                      id="nx-type-input"
+                      className="nx-type-input"
+                      value={typedText}
+                      onChange={(e) => setTypedText(e.target.value)}
+                      placeholder="Type your message"
+                      dir="auto"
+                      autoComplete="off"
+                      maxLength={1000}
+                      disabled={!canType}
+                      autoFocus
+                    />
+                    <button type="submit" className="nx-action-btn nx-action-btn--primary"
+                            disabled={!canType || !typedText.trim()}>
+                      Send
+                    </button>
+                  </form>
+                ) : (
+                  <button type="button" className="nx-type-toggle" onClick={() => setTypeOpen(true)}>
+                    Type instead
+                  </button>
+                )}
 
               </div>
             </section>
@@ -780,7 +858,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                   return (
                     <div key={msg.id}
                          className={`nx-row ${isAgent ? 'nx-row-l' : 'nx-row-r'} ${isFirst ? 'nx-first' : ''}`}>
-                      <div className={`nx-bubble ${isAgent ? 'nx-bbl-a' : 'nx-bbl-u'}`}
+                      <div className={`nx-bubble ${isAgent ? 'nx-bbl-a' : 'nx-bbl-u'}`} dir="auto"
                            style={!isAgent ? { borderColor: color + '38' } : {}}>
                         {msg.content}
                       </div>
@@ -790,7 +868,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
 
                 {partialReply && (
                   <div className="nx-row nx-row-l nx-first">
-                    <div className="nx-bubble nx-bbl-a">
+                    <div className="nx-bubble nx-bbl-a" dir="auto">
                       {partialReply}
                       <span className="nx-cursor" style={{ background: color }} />
                     </div>
@@ -812,6 +890,54 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
 
         </div>
       )}
+    </div>
+  )
+}
+
+// Accessible modal: focus moves in (to [data-autofocus] or the first control),
+// Tab stays inside, Escape dismisses, and focus returns to where it was.
+function NxDialog({ title, onDismiss, children }: {
+  title:     string
+  onDismiss: () => void
+  children:  ReactNode
+}) {
+  const panelRef   = useRef<HTMLDivElement>(null)
+  const dismissRef = useRef(onDismiss)
+  const titleId    = useId()
+  useEffect(() => { dismissRef.current = onDismiss }, [onDismiss])
+
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null
+    const panel  = panelRef.current
+    const focusables = () => Array.from(
+      panel?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? [],
+    )
+    const first = panel?.querySelector<HTMLElement>('[data-autofocus]') ?? focusables()[0]
+    first?.focus()
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { e.preventDefault(); dismissRef.current(); return }
+      if (e.key !== 'Tab') return
+      const items = focusables()
+      if (items.length === 0) return
+      const firstItem = items[0]
+      const lastItem  = items[items.length - 1]
+      if (e.shiftKey && document.activeElement === firstItem) { e.preventDefault(); lastItem.focus() }
+      else if (!e.shiftKey && document.activeElement === lastItem) { e.preventDefault(); firstItem.focus() }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      if (opener && document.contains(opener)) opener.focus()
+    }
+  }, [])
+
+  return (
+    <div className="nx-dialog-backdrop">
+      <div ref={panelRef} className="nx-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+        <h2 id={titleId} className="nx-dialog-title">{title}</h2>
+        {children}
+      </div>
     </div>
   )
 }

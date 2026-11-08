@@ -128,8 +128,10 @@ function AgentLoginForm() {
           }
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-7 space-y-4" noValidate>
+          <label htmlFor="agent-login-shop" className="sr-only">Shop</label>
           <select
+            id="agent-login-shop"
             value={shopId}
             onChange={(e) => {
               const id   = e.target.value
@@ -154,7 +156,11 @@ function AgentLoginForm() {
             ))}
           </select>
 
+          <label htmlFor="agent-login-username" className="sr-only">Agent username</label>
           <input
+            id="agent-login-username"
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? 'agent-login-error' : undefined}
             value={username}
             onChange={(e) => { setUsername(e.target.value); setError(null) }}
             placeholder={`Agent username, e.g. ${agentHint}`}
@@ -170,7 +176,11 @@ function AgentLoginForm() {
           />
 
           <div className="relative">
+            <label htmlFor="agent-login-password" className="sr-only">Password</label>
             <input
+              id="agent-login-password"
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? 'agent-login-error' : undefined}
               type={showPwd ? 'text' : 'password'}
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(null) }}
@@ -191,7 +201,7 @@ function AgentLoginForm() {
             <button
               type="button"
               onClick={() => setShowPwd(v => !v)}
-              tabIndex={-1}
+              aria-pressed={showPwd}
               aria-label={showPwd ? 'Hide password' : 'Show password'}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
             >
@@ -245,7 +255,7 @@ function AgentLoginForm() {
           )}
 
           {error && (
-            <p className="flex items-center gap-1.5 text-sm font-semibold text-red-300">
+            <p id="agent-login-error" role="alert" className="flex items-center gap-1.5 text-sm font-semibold text-red-300">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
                 <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>

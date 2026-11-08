@@ -74,9 +74,15 @@ function NodeRow({ node, depth, defaultOpen = false }: NodeRowProps) {
         <td className="px-3 py-3" style={{ paddingLeft: `${12 + indentPx}px` }}>
           <div className="flex items-center gap-2">
             {!isLeaf && hasChildren && (
-              <span className="text-[0.65rem] text-[var(--dash-muted)] w-3 shrink-0">
-                {open ? '▼' : '▶'}
-              </span>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setOpen((o) => !o) }}
+                aria-expanded={open}
+                aria-label={`${open ? 'Collapse' : 'Expand'} ${node.name}`}
+                className="-my-1 grid h-7 w-7 shrink-0 place-items-center rounded text-[0.65rem] text-[var(--dash-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--dash-heading)]"
+              >
+                <span aria-hidden="true">{open ? '▼' : '▶'}</span>
+              </button>
             )}
             {isLeaf && <span className="w-3 shrink-0" />}
             <div>

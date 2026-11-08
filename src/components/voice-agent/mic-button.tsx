@@ -21,15 +21,31 @@ export function MicButton({ phase, isRecording, onPressDown, onPressUp }: Props)
     onPressUp()
   }
 
+  // Keyboard: hold Space or Enter to talk, release to send (mirrors the pointer).
+  const isTalkKey = (e: React.KeyboardEvent) => e.key === ' ' || e.key === 'Enter'
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isTalkKey(e) || state.disabled) return
+    e.preventDefault()
+    if (!e.repeat && !isRecording) onPressDown()
+  }
+  const handleKeyUp = (e: React.KeyboardEvent) => {
+    if (!isTalkKey(e) || state.disabled) return
+    e.preventDefault()
+    if (isRecording) onPressUp()
+  }
+
   return (
     <button
       type="button"
       disabled={state.disabled}
       title={state.title}
-      aria-label={state.title}
+      aria-label={state.title ? `${state.title} (hold Space to talk)` : 'Microphone'}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}   // release if pointer leaves while held
+      onKeyDown={handleKeyDown}
+      onKeyUp={handleKeyUp}
+      onBlur={() => { if (isRecording) onPressUp() }}
       className={`
         w-9 h-9 rounded-xl flex items-center justify-center shrink-0
         select-none touch-none

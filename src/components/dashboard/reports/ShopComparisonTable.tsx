@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import type { ShopReportRow } from '@/lib/db/report-query'
 
-const CATEGORIES = ['product', 'service', 'behavioral', 'facility', 'pricing', 'general']
+const CATEGORIES = ['product", "service", "behavioral", "facility", "pricing", "general']
 const CATEGORY_LABEL: Record<string, string> = {
   product: 'Product', service: 'Service', behavioral: 'Behavioral',
   facility: 'Facility', pricing: 'Pricing', general: 'General',
@@ -77,13 +77,24 @@ export function ShopComparisonTable({ rows }: Props) {
     return sortAsc ? (av as number) - (bv as number) : (bv as number) - (av as number)
   })
 
-  function Th({ label, col }: { label: string; col: SortKey }) {
+  // Rendered as a plain function call (not <Th/>) so React does not remount
+  // the header cells on every render.
+  const th = (label: string, col: SortKey) => {
+    const active = sortKey === col
     return (
       <th
-        className="cursor-pointer whitespace-nowrap px-3 py-2 text-left text-[0.62rem] font-black uppercase tracking-widest text-[var(--dash-muted)] hover:text-[var(--dash-accent)] select-none"
-        onClick={() => handleSort(col)}
+        key={col}
+        scope="col"
+        aria-sort={active ? (sortAsc ? 'ascending' : 'descending') : 'none'}
+        className="whitespace-nowrap px-1 py-1 text-left"
       >
-        {label}<SortIcon active={sortKey === col} asc={sortAsc} />
+        <button
+          type="button"
+          onClick={() => handleSort(col)}
+          className="rounded px-2 py-1.5 text-[0.62rem] font-black uppercase tracking-widest text-[var(--dash-muted)] hover:text-[var(--dash-accent)] select-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--dash-heading)]"
+        >
+          {label}<SortIcon active={active} asc={sortAsc} />
+        </button>
       </th>
     )
   }
@@ -102,32 +113,39 @@ export function ShopComparisonTable({ rows }: Props) {
       <table className="min-w-full text-sm">
         <thead>
           <tr className="border-b border-[var(--dash-border)] bg-[var(--dash-inset)]">
-            <th className="w-6 px-3 py-2" />
-            <Th label="Outlet"           col="name" />
-            <Th label="Total"            col="total" />
-            <Th label="Satisfaction"     col="satisfaction" />
-            <Th label="Avg Rating"       col="avgRating" />
-            <Th label="Positive"         col="positive" />
-            <Th label="Negative"         col="negative" />
-            <Th label="Complaint"        col="complaint" />
-            <Th label="Suggestion"       col="suggestion" />
-            <Th label="Pending"          col="pendingFollowUps" />
+            <th className="w-6 px-3 py-2"><span className="sr-only">Expand</span></th>
+            {th("Outlet", "name")}
+            {th("Total", "total")}
+            {th("Satisfaction", "satisfaction")}
+            {th("Avg Rating", "avgRating")}
+            {th("Positive", "positive")}
+            {th("Negative", "negative")}
+            {th("Complaint", "complaint")}
+            {th("Suggestion", "suggestion")}
+            {th("Pending", "pendingFollowUps")}
           </tr>
         </thead>
         <tbody>
           {sorted.map((row, i) => {
             const isExpanded = expanded.has(row.id)
             return (
-              <>
+              <Fragment key={row.id}>
                 <tr
-                  key={row.id}
                   className={`cursor-pointer border-b border-[var(--dash-border)] transition-colors hover:bg-[var(--dash-inset)] ${
                     i % 2 === 0 ? '' : 'bg-[var(--dash-inset)]/40'
                   }`}
                   onClick={() => toggleExpand(row.id)}
                 >
-                  <td className="px-3 py-3 text-[var(--dash-muted)] text-xs">
-                    {isExpanded ? '▼' : '▶'}
+                  <td className="px-1 py-1 text-[var(--dash-muted)] text-xs">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); toggleExpand(row.id) }}
+                      aria-expanded={isExpanded}
+                      aria-label={`${isExpanded ? 'Hide' : 'Show'} details for ${row.name}`}
+                      className="grid h-8 w-8 place-items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--dash-heading)]"
+                    >
+                      <span aria-hidden="true">{isExpanded ? '▼' : '▶'}</span>
+                    </button>
                   </td>
                   <td className="px-3 py-3">
                     <p className="font-black text-[var(--dash-heading)] leading-tight">{row.name}</p>
@@ -209,7 +227,7 @@ export function ShopComparisonTable({ rows }: Props) {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             )
           })}
         </tbody>

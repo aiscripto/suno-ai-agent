@@ -11,6 +11,7 @@ import type { DashboardData } from '@/lib/db/dashboard-query'
 import type { AppSession } from '@/lib/auth/session'
 import { PROVINCES, CITIES_BY_PROVINCE } from '@/data/pakistan-locations'
 import { ReportsTab } from '@/components/dashboard/reports/ReportsTab'
+import { useModalA11y } from '@/hooks/use-modal-a11y'
 
 // ── Emoji maps ─────────────────────────────────────────────────────────────────
 const SENTIMENT_EMOJI: Record<string, string> = {
@@ -560,22 +561,22 @@ function EditContactPanel({
           Saved!
         </div>
       )}
-      {err && <p className="text-red-500 text-sm">{err}</p>}
+      {err && <p role="alert" className="text-red-500 text-sm">{err}</p>}
 
       <div>
-        <label className="block text-xs text-slate-500 mb-1 font-semibold">👤 Name</label>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Customer name"
+        <label htmlFor="lead-edit-name" className="block text-xs text-slate-500 mb-1 font-semibold">👤 Name</label>
+        <input id="lead-edit-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Customer name"
           className={fieldCls} />
       </div>
 
       <div>
-        <label className="block text-xs text-slate-500 mb-2 font-semibold">📞 Phone</label>
-        <PhonePad value={phone} onChange={setPhone} />
+        <p id="lead-edit-phone" className="block text-xs text-slate-500 mb-2 font-semibold">📞 Phone</p>
+        <div role="group" aria-labelledby="lead-edit-phone"><PhonePad value={phone} onChange={setPhone} /></div>
       </div>
 
       <div>
-        <label className="block text-xs text-slate-500 mb-1 font-semibold">✉️ Email</label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="customer@example.com"
+        <label htmlFor="lead-edit-email" className="block text-xs text-slate-500 mb-1 font-semibold">✉️ Email</label>
+        <input id="lead-edit-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="customer@example.com"
           className={fieldCls} />
       </div>
 
@@ -607,6 +608,8 @@ function TranscriptModal({
   onStatusChange: (id: string, status: string) => void
   onLeadChange:   (id: string, lead: { name: string | null; phone: string | null; email: string | null }) => void
 }) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  useModalA11y(panelRef, true, onClose)
   const [status,    setStatus]    = useState(review.status)
   const [saving,    setSaving]    = useState(false)
   const [saveErr,   setSaveErr]   = useState<string | null>(null)
@@ -657,7 +660,8 @@ function TranscriptModal({
          onClick={onClose}>
       <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" />
 
-      <div className="relative z-10 w-full max-w-2xl max-h-[90dvh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden"
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="transcript-modal-title" tabIndex={-1}
+           className="relative z-10 w-full max-w-2xl max-h-[90dvh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden"
            onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
@@ -665,7 +669,7 @@ function TranscriptModal({
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xl">{SENTIMENT_EMOJI[review.sentiment ?? ''] ?? '💬'}</span>
-              <span className="text-sm font-bold text-slate-900 break-words">🏪 {review.shopName}</span>
+              <h2 id="transcript-modal-title" className="text-sm font-bold text-slate-900 break-words">🏪 {review.shopName}</h2>
               {review.category && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 capitalize border border-slate-200">
                   {CATEGORY_EMOJI[review.category]} {review.category}
@@ -681,8 +685,10 @@ function TranscriptModal({
               {review.subcategory && ` · ${review.subcategory}`}
             </p>
           </div>
-          <button onClick={onClose}
-            className="shrink-0 text-slate-400 hover:text-slate-600 text-xl leading-none p-1">✕</button>
+          <button type="button" onClick={onClose} aria-label="Close conversation"
+            className="shrink-0 grid h-10 w-10 place-items-center rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 text-xl leading-none">
+            <span aria-hidden="true">✕</span>
+          </button>
         </div>
 
         {/* Scrollable body */}
@@ -965,21 +971,25 @@ function ReviewsPanel({ reviews: initial }: { reviews: DashboardData['recentRevi
         {/* Search + toggle row */}
         <div className="flex gap-2 flex-wrap items-center">
           <div className="relative flex-1 min-w-[180px]">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">🔍</span>
+            <span aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">🔍</span>
+            <label htmlFor="review-search" className="sr-only">Search reviews</label>
             <input
-              type="text" value={filters.search}
+              id="review-search"
+              type="search" value={filters.search}
               onChange={(e) => set('search', e.target.value)}
               placeholder="Search reviews, outlet, customer name, phone…"
               className={`${inputCls} pl-8 text-sm`}
             />
             {filters.search && (
-              <button onClick={() => set('search', '')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs">✕</button>
+              <button type="button" onClick={() => set('search', '')} aria-label="Clear search"
+                className="absolute right-1 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded text-slate-500 hover:text-slate-700 text-xs">
+                <span aria-hidden="true">✕</span>
+              </button>
             )}
           </div>
 
           {/* Filter toggle */}
-          <button onClick={() => setOpen((o) => !o)}
+          <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold border transition-colors ${
               open || activeCount > 0
                 ? 'bg-blue-600 text-white border-blue-600'
@@ -1019,8 +1029,8 @@ function ReviewsPanel({ reviews: initial }: { reviews: DashboardData['recentRevi
               </div>
 
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">🏪 Outlet</p>
-                <select value={filters.shop} onChange={(e) => set('shop', e.target.value)} className={selCls}>
+                <label htmlFor="review-filter-shop" className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">🏪 Outlet</label>
+                <select id="review-filter-shop" value={filters.shop} onChange={(e) => set('shop', e.target.value)} className={selCls}>
                   {shops.map((s) => (
                     <option key={s} value={s}>{s === 'all' ? 'All Outlets' : s}</option>
                   ))}
@@ -1028,8 +1038,8 @@ function ReviewsPanel({ reviews: initial }: { reviews: DashboardData['recentRevi
               </div>
 
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">↕ Sort By</p>
-                <select value={filters.sort}
+                <label htmlFor="review-filter-sort" className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">↕ Sort By</label>
+                <select id="review-filter-sort" value={filters.sort}
                   onChange={(e) => set('sort', Number(e.target.value) as SortKey)}
                   className={selCls}>
                   {SORT_OPTIONS.map((s, i) => (

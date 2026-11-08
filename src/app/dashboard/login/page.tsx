@@ -90,8 +90,12 @@ function LoginForm() {
           }
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-7 space-y-4" noValidate>
+          <label htmlFor="dash-login-username" className="sr-only">Username</label>
           <input
+            id="dash-login-username"
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? 'dash-login-error' : undefined}
             value={username}
             onChange={(e) => { setUsername(e.target.value); setError(null) }}
             placeholder="Username"
@@ -107,7 +111,11 @@ function LoginForm() {
           />
 
           <div className="relative">
+            <label htmlFor="dash-login-password" className="sr-only">Password</label>
             <input
+              id="dash-login-password"
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? 'dash-login-error' : undefined}
               type={showPwd ? 'text' : 'password'}
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(null) }}
@@ -128,7 +136,7 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => setShowPwd(v => !v)}
-              tabIndex={-1}
+              aria-pressed={showPwd}
               aria-label={showPwd ? 'Hide password' : 'Show password'}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
             >
@@ -148,7 +156,7 @@ function LoginForm() {
           </div>
 
           {capsLock && (
-            <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-400">
+            <p role="status" className="flex items-center gap-1.5 text-xs font-semibold text-amber-400">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                 <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
@@ -158,7 +166,7 @@ function LoginForm() {
           )}
 
           {error && (
-            <p className="flex items-center gap-1.5 text-sm font-semibold text-red-300">
+            <p id="dash-login-error" role="alert" className="flex items-center gap-1.5 text-sm font-semibold text-red-300">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
                 <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>

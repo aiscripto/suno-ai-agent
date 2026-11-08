@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useId } from 'react'
 import { PROVINCES, CITIES_BY_PROVINCE } from '@/data/pakistan-locations'
 
 export interface ReportFilterState {
@@ -127,6 +127,7 @@ function MultiDropdown({
   placeholder?: string
 }) {
   const [open, setOpen] = useState(false)
+  const uid = useId()
   const ref = useRef<HTMLDivElement>(null)
   const [search, setSearch] = useState('')
 
@@ -154,11 +155,15 @@ function MultiDropdown({
   }
 
   return (
-    <div ref={ref} className="relative min-w-0">
-      <p className="mb-1 text-[0.62rem] font-black uppercase tracking-widest text-[var(--dash-muted)]">{label}</p>
+    <div ref={ref} className="relative min-w-0"
+         onKeyDown={(e) => { if (e.key === 'Escape' && open) { e.stopPropagation(); setOpen(false) } }}>
+      <p id={`${uid}-label`} className="mb-1 text-[0.62rem] font-black uppercase tracking-widest text-[var(--dash-muted)]">{label}</p>
       <button
         type="button"
         disabled={disabled}
+        aria-expanded={open}
+        aria-controls={`${uid}-panel`}
+        aria-labelledby={`${uid}-label ${uid}-value`}
         onClick={() => setOpen((o) => !o)}
         className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
           disabled
@@ -166,7 +171,7 @@ function MultiDropdown({
             : 'bg-[var(--dash-input)] border-[var(--dash-input-border)] text-[var(--dash-text)] hover:border-[var(--dash-accent)]'
         }`}
       >
-        <span className={`truncate ${selected.length > 0 ? 'text-[var(--dash-accent)]' : 'text-[var(--dash-muted)]'}`}>
+        <span id={`${uid}-value`} className={`truncate ${selected.length > 0 ? 'text-[var(--dash-accent)]' : 'text-[var(--dash-muted)]'}`}>
           {displayText}
         </span>
         <svg className={`h-4 w-4 shrink-0 text-[var(--dash-muted)] transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -175,13 +180,15 @@ function MultiDropdown({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-full min-w-[180px] rounded-xl border border-[var(--dash-border)] bg-[var(--dash-surface)] shadow-lg">
+        <div id={`${uid}-panel`} role="group" aria-labelledby={`${uid}-label`}
+             className="absolute left-0 top-full z-50 mt-1 w-full min-w-[180px] rounded-xl border border-[var(--dash-border)] bg-[var(--dash-surface)] shadow-lg">
           {options.length > 6 && (
             <div className="p-2 border-b border-[var(--dash-border)]">
               <input
                 autoFocus
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                aria-label={`Search ${label}`}
                 placeholder="Search..."
                 className="w-full rounded-lg border border-[var(--dash-input-border)] bg-[var(--dash-input)] px-3 py-1.5 text-xs text-[var(--dash-text)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)]"
               />
@@ -350,6 +357,7 @@ export function ReportFilters({ shops, isAdmin, onApply, loading }: Props) {
             <div className="flex items-center gap-1.5 ml-2">
               <input
                 type="date"
+                aria-label="From date"
                 value={filters.dateFrom}
                 onChange={(e) => handleDateChange('dateFrom', e.target.value)}
                 className="rounded-lg border border-[var(--dash-input-border)] bg-[var(--dash-input)] px-3 py-1.5 text-xs font-semibold text-[var(--dash-text)] focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)]"
@@ -357,6 +365,7 @@ export function ReportFilters({ shops, isAdmin, onApply, loading }: Props) {
               <span className="text-xs text-[var(--dash-muted)] font-bold">to</span>
               <input
                 type="date"
+                aria-label="To date"
                 value={filters.dateTo}
                 onChange={(e) => handleDateChange('dateTo', e.target.value)}
                 className="rounded-lg border border-[var(--dash-input-border)] bg-[var(--dash-input)] px-3 py-1.5 text-xs font-semibold text-[var(--dash-text)] focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)]"

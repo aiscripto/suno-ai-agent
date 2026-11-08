@@ -15,7 +15,35 @@ import type {
   LeadData,
   ReviewData,
   CallSummary,
+  ErrorKind,
 } from '@/types'
+
+// ── Plain-language errors ──────────────────────────────────────────────────────
+// Raw exception text ("TypeError: Failed to fetch") never reaches the customer.
+// Each error gets a kind so the UI can offer the matching recovery action.
+const ERROR_COPY: Record<ErrorKind, string> = {
+  mic:     'The microphone is blocked. Allow microphone access in your browser, or type your message instead.',
+  network: 'We lost the connection. Check the internet and try again.',
+  limit:   'The service is busy right now. Please try again in a minute.',
+  save:    'Your conversation ended, but we could not save it. Please try again.',
+  general: 'Something went wrong on our side. Please try again.',
+}
+
+function classifyError(err: unknown, fallback: ErrorKind = 'general'): ErrorKind {
+  const name = (err as Error)?.name ?? ''
+  const text = `${name} ${(err as Error)?.message ?? String(err ?? '')}`.toLowerCase()
+  if (name === 'NotAllowedError' || name === 'NotFoundError' || text.includes('microphone') || text.includes('permission')) return 'mic'
+  if (text.includes('429') || text.includes('quota') || text.includes('rate limit')) return 'limit'
+  if (name === 'TypeError' && /fetch|network|load failed/.test(text)) return 'network'
+  if (/failed to fetch|networkerror|load failed|offline/.test(text)) return 'network'
+  return fallback
+}
+
+function errorAction(err: unknown, fallback: ErrorKind = 'general'): VoiceAgentAction {
+  if (err) console.error('[voice-agent]', err)
+  const kind = classifyError(err, fallback)
+  return { type: 'ERROR', kind, message: ERROR_COPY[kind] }
+}
 
 const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 
@@ -26,7 +54,7 @@ function reducer(state: VoiceAgentState, action: VoiceAgentAction): VoiceAgentSt
       return { ...state, phase: 'idle' }
 
     case 'START_LISTENING':
-      return { ...state, phase: 'listening', error: null }
+      return { ...state, phase: 'listening', error: null, errorKind: null }
 
     case 'STOP_LISTENING':
       return { ...state, phase: 'transcribing' }
@@ -67,7 +95,10 @@ function reducer(state: VoiceAgentState, action: VoiceAgentAction): VoiceAgentSt
       return { ...state, phase: 'idle' }
 
     case 'ERROR':
-      return { ...state, phase: 'error', error: action.message }
+      return { ...state, phase: 'error', error: action.message, errorKind: action.kind ?? 'general' }
+
+    case 'RETRY_SAVE':
+      return { ...state, phase: 'ended', error: null, errorKind: null }
 
     default:
       return state
@@ -82,6 +113,7 @@ const initialState: VoiceAgentState = {
   transcript:   [],
   partialReply: '',
   error:        null,
+  errorKind:    null,
   leadData:     EMPTY_LEAD,
   reviewData:   EMPTY_REVIEW,
   callSummary:  null,
@@ -103,6 +135,7 @@ export interface UseVoiceAgentReturn {
   transcript:         Message[]
   partialReply:       string
   error:              string | null
+  errorKind:          ErrorKind | null
   isRecording:        boolean
   hasSpeech:          boolean
   isPlaying:          boolean
@@ -125,6 +158,8 @@ export interface UseVoiceAgentReturn {
   releaseMic:   () => void
   sendText:     (text: string) => void
   endCall:      () => void
+  /** Re-run the end-of-call save after it failed. */
+  retrySave:    () => void
 }
 
 // ── Hook ───────────────────────────────────────────────────────────────────────
@@ -186,7 +221,7 @@ export function useVoiceAgent({
   const apiPlayer = useAudioPlayer({
     requestHeaders: embedHeaders,
     onPlaybackEnd,
-    onPlaybackError: (message) => dispatch({ type: 'ERROR', message }),
+    onPlaybackError: (message) => dispatch(errorAction(new Error(message))),
   })
 
   // ── TTS: Browser SpeechSynthesis (free, no API) ───────────────────────────────
@@ -232,7 +267,7 @@ export function useVoiceAgent({
         try { event = JSON.parse(part.slice(6)) } catch { return }
 
         if (event.error) {
-          dispatchFn?.({ type: 'ERROR', message: String(event.error) })
+          dispatchFn?.(errorAction(new Error(String(event.error))))
           receivedDone = true
           return
         }
@@ -297,11 +332,11 @@ export function useVoiceAgent({
 
       // Stream closed without a done event — unblock the UI so the user can retry
       if (!receivedDone && !signal.aborted) {
-        dispatchFn?.({ type: 'ERROR', message: 'Response incomplete — please try again.' })
+        dispatchFn?.(errorAction(new Error('Response incomplete')))
       }
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
-      dispatchFn?.({ type: 'ERROR', message: String(err) })
+      dispatchFn?.(errorAction(err))
     }
   }
 
@@ -326,7 +361,9 @@ export function useVoiceAgent({
       console.log('[Call Report]', JSON.stringify({ lead, review, ...data }, null, 2))
     } catch (err) {
       console.error('[summarize]', err)
-      dispatchFn?.({ type: 'ERROR', message: 'Call ended, but saving failed. Please retry before closing.' })
+      // A network or rate-limit failure during the save is still a save failure:
+      // the UI must offer "Try again" for the save, not for the microphone.
+      dispatchFn?.({ type: 'ERROR', kind: 'save', message: ERROR_COPY.save })
     }
   }
 
@@ -346,7 +383,7 @@ export function useVoiceAgent({
     enabled:      webSpeech,
     language,
     onTranscript: onSpeechTranscript,
-    onError:      (msg) => dispatch({ type: 'ERROR', message: msg }),
+    onError:      (msg) => dispatch(errorAction(new Error(msg))),
   })
 
   // ── MediaRecorder + Whisper path ──────────────────────────────────────────────
@@ -375,7 +412,7 @@ export function useVoiceAgent({
       userText   = data.text ?? ''
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
-      dispatch({ type: 'ERROR', message: String((err as Error).message || 'Transcription failed. Please try again.') })
+      dispatch(errorAction(err))
       return
     }
     if (!userText.trim()) {
@@ -438,7 +475,7 @@ export function useVoiceAgent({
         }
       } catch (err) {
         if ((err as Error).name === 'AbortError') return
-        if (!cancelled) dispatch({ type: 'ERROR', message: String(err) })
+        if (!cancelled) dispatch(errorAction(err))
       }
     }
 
@@ -472,7 +509,7 @@ export function useVoiceAgent({
     if (isRecording) { stopRec(); return }
     if (phase === 'idle' || phase === 'error') {
       dispatch({ type: 'START_LISTENING' })
-      startRec().catch((err) => dispatch({ type: 'ERROR', message: String(err) }))
+      startRec().catch((err) => dispatch(errorAction(err, 'mic')))
     }
   }, [isRecording, startRec, stopRec, stopAll])
 
@@ -480,7 +517,7 @@ export function useVoiceAgent({
     const phase = stateRef.current.phase
     if (phase !== 'idle' && phase !== 'error') return
     dispatch({ type: 'START_LISTENING' })
-    startRec().catch((err) => dispatch({ type: 'ERROR', message: String(err) }))
+    startRec().catch((err) => dispatch(errorAction(err, 'mic')))
   }, [startRec])
 
   const releaseMic = useCallback(() => {
@@ -528,11 +565,20 @@ export function useVoiceAgent({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRecording, stopRec])
 
+  // Re-run the end-of-call save after a failure. Only valid once the call has
+  // ended and the save reported an error.
+  const retrySave = useCallback(() => {
+    if (stateRef.current.errorKind !== 'save') return
+    dispatch({ type: 'RETRY_SAVE' })
+    saveCallSummary(dispatch, reviewRef.current.sentiment === 'positive')
+  }, [])
+
   return {
     phase:              state.phase,
     transcript:         state.transcript,
     partialReply:       state.partialReply,
     error:              state.error,
+    errorKind:          state.errorKind,
     isRecording,
     hasSpeech,
     isPlaying,
@@ -555,5 +601,6 @@ export function useVoiceAgent({
     releaseMic,
     sendText,
     endCall,
+    retrySave,
   }
 }
