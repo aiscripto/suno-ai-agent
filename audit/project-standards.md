@@ -9,6 +9,7 @@ Sources, in order: the code, then `CLAUDE.md`, then `EMBED_INTEGRATION.md`. `CLA
 ## 1. Tenant isolation and embed access
 
 - [ ] **Every API route resolves the tenant on the server.** For each `src/app/api/**/route.ts`, record how the tenant is found (`getTenantFromRequest`, session `shopId`, or nothing). A route that trusts a tenant id, shop code or prompt setting sent in the body is a finding.
+- [ ] **Embed path is off by design** (agent-login only since 2026-11-09). Check that `/voice` cannot be reached without an agent session, and list embed-only code that is now dead.
 - [ ] **Embed auth when disabled.** With `EMBED_AUTH_ENABLED=false` (the default), state exactly what an anonymous caller on the internet can reach: chat, transcribe, speak, summarize, config. Rate as exposure of paid endpoints (see §4).
 - [ ] **Tenant resolution order** `tenantId + token` → `x-api-key` → `Referer` domain → default tenant. `Referer` is client-controlled: check that domain matching never grants more than the default tenant, and that a missing or unknown tenant does not fall back to a privileged one.
 - [ ] **Token comparison** uses a constant-time compare, and tokens are not logged or echoed in errors.

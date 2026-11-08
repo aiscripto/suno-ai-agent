@@ -8,10 +8,13 @@ web
 
 ## Users
 
-Two primary audiences, weighted equally:
+Primary audience (current):
 
 - **Shop customers in-store.** A shop agent logs in at `/agent-login` on a counter device at the branch; walk-in customers then speak to the agent to give feedback, raise a complaint, or ask for support. The device is shared, used standing, often in a noisy shop, and each conversation is short (120 s session cap, 60 s per turn).
-- **Website visitors.** The same agent embedded by iframe (`/voice?tenant=…&token=…&shop=…`) on a tenant's website, used from the visitor's own phone or laptop.
+
+Planned audience (not live):
+
+- **Website visitors via iframe.** Deliberately off for now: `/voice` requires an agent login (decision 2026-11-09). When iframe embedding is brought back (`/voice?tenant=…&token=…&shop=…`), the agent interface must first be reviewed and resized for iframe sizes and visitors' own phones and laptops. Until then, design for the in-store counter device.
 
 Secondary audiences:
 
@@ -31,7 +34,7 @@ A voice-first agent that already knows which branch it is standing in, so it nev
 ## Operating Context
 
 - Three agent types per tenant: `support`, `complaints`, `reviews`.
-- Three access paths: anonymous or token iframe embed; shop-agent login on an in-store device; manager/admin dashboard.
+- Access paths in use: shop-agent login on an in-store device; manager/admin dashboard. The iframe embed path exists in code but is deliberately disabled for now.
 - Conversation cycle: connect → idle → listening → transcribing → thinking → speaking → ended / error, with visible countdowns for the session and turn caps.
 - Tenants and their personas are configured in `src/data/tenants.json`; branch context comes from the session or `shop` parameter.
 - Pakistani retail context (branch codes, cities, regions in `src/data/pakistan-locations.ts`).

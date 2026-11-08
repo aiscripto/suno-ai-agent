@@ -48,6 +48,7 @@ Fields follow `kit/config.template.md`.
 - The agent never asks which branch the caller is at: shop context is injected from the session or `shop` param.
 - Session cap 120 s and per-turn recording cap 60 s are product rules. Check where they are enforced (client and server).
 - Three roles: `agent` (only `/voice`), `manager` (dashboard scoped to own `shopId`), `admin` (all shops).
+- `/voice` is agent-login only by design (2026-11-09): anonymous and token iframe embedding is deliberately off. Do not report the redirect to `/agent-login` as a defect. Iframe support is future work and needs a review and resize of the agent interface first. Do still report embed-only code paths that are dead or would be unsafe if re-enabled.
 
 ## Context the agent should know
 
