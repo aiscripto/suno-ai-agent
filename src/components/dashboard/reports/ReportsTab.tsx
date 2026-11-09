@@ -191,6 +191,7 @@ export function ReportsTab({ shops, isAdmin }: Props) {
                   key={view.key}
                   type="button"
                   onClick={() => setActiveView(view.key)}
+                  aria-pressed={activeView === view.key}
                   className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-black transition-colors ${
                     activeView === view.key
                       ? 'text-white border-transparent shadow-sm'
@@ -198,8 +199,8 @@ export function ReportsTab({ shops, isAdmin }: Props) {
                   }`}
                   style={activeView === view.key ? { background: 'var(--dash-accent)' } : undefined}
                 >
-                  <span>{view.icon}</span>
-                  <span className="hidden sm:inline">{view.label}</span>
+                  <span aria-hidden="true">{view.icon}</span>
+                  <span className="sr-only sm:not-sr-only">{view.label}</span>
                 </button>
               ))}
             </div>

@@ -11,7 +11,9 @@ import { COPY, uiLangFor } from './copy'
 // classification (sentiment, complaint, lead) is for managers on the dashboard;
 // the customer never sees it reflected in colour or labels.
 const DEFAULT_COLOR = '#00E5FF'
-const ARABIC_SCRIPT = /[\u0600-\u06FF]/
+const ARABIC_SCRIPT     = /[\u0600-\u06FF]/
+const DEVANAGARI_SCRIPT = /[\u0900-\u097F]/
+const scriptLang = (text: string) => (ARABIC_SCRIPT.test(text) ? 'ur' : DEVANAGARI_SCRIPT.test(text) ? 'hi' : 'en')
 
 // ── Theme system ───────────────────────────────────────────────────────────────
 const THEMES: VoiceThemeName[] = ['nexus', 'daylight', 'emerald', 'ember']
@@ -89,7 +91,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
 
   const uiLang = uiLangFor(language)
   const t      = COPY[uiLang]
-  const agent  = agentName || 'The agent'
+  const agent  = agentName || t.fallback.agent
 
   const transcriptRef = useRef<HTMLDivElement>(null)
   const doneTitleRef  = useRef<HTMLHeadingElement>(null)
@@ -578,7 +580,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                 {agentInitial}
               </span>
               <span className="nx-hdr-copy">
-                <span className="nx-company">{companyName || 'Customer Experience'}</span>
+                <span className="nx-company">{companyName || t.fallback.company}</span>
               </span>
             </div>
 
@@ -589,22 +591,22 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                   onClick={() => setLanguage('English')}
                   disabled={isRecording}
                   aria-pressed={language.toLowerCase() === 'english'}
-                  lang="en" aria-label={t.aria.english}
+                  lang="en"
                 >EN</button>
                 <button
                   className={`nx-lang-btn ${language.toLowerCase() === 'urdu' ? 'nx-lang-active' : ''}`}
                   onClick={() => setLanguage('Urdu')}
                   disabled={isRecording}
                   aria-pressed={language.toLowerCase() === 'urdu'}
-                  lang="ur" dir="rtl" aria-label={t.aria.urdu}
+                  lang="ur" dir="rtl"
                 >اردو</button>
               </div>
 
-              <button className="nx-header-end-btn" onClick={handleManualEnd} aria-label={t.aria.end}>
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none"
-                     stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.13.95.35 1.88.66 2.76a2 2 0 0 1-.45 2.11L8 9.86a16 16 0 0 0 6.14 6.14l1.27-1.27a2 2 0 0 1 2.11-.45c.88.31 1.81.53 2.76.66A2 2 0 0 1 22 16.92z" />
-                  <path d="m2 2 20 20" />
+              {/* Always labelled (it ends the conversation); not a phone: this is not a call. */}
+              <button type="button" className="nx-header-end-btn" onClick={handleManualEnd}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" aria-hidden="true"
+                     stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                  <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
                 <span>{t.end}</span>
               </button>
@@ -620,7 +622,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                 <AnimatedAvatar phase={phase} color={color} size="sm" />
               </span>
               <span className="nx-agent-id">
-                <h1 className="nx-agent-title">{agentName || 'Review Agent'}</h1>
+                <h1 className="nx-agent-title">{agentName || t.fallback.agentName}</h1>
                 {shopName && (
                   <span className="nx-shop-badge">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -634,8 +636,8 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
 
             <section className="nx-convo" aria-labelledby="nx-convo-title">
               {/* Announce each finished reply once; the streaming bubble stays silent. */}
-              <p className="sr-only" aria-live="polite" lang={ARABIC_SCRIPT.test(lastAgentReply) ? 'ur' : 'en'}>
-                {lastAgentReply}
+              <p className="sr-only" aria-live="polite" lang={scriptLang(lastAgentReply)}>
+                {isPlaying ? '' : lastAgentReply}
               </p>
               <h2 id="nx-convo-title" className="nx-convo-title">{t.conversation}</h2>
               <div ref={transcriptRef} className="nx-transcript scrollbar-thin">
@@ -653,7 +655,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                     <div key={msg.id}
                          className={`nx-row ${isAgent ? 'nx-row-l' : 'nx-row-r'} ${isFirst ? 'nx-first' : ''}`}>
                       <div className={`nx-bubble ${isAgent ? 'nx-bbl-a' : 'nx-bbl-u'}`} dir="auto"
-                           lang={ARABIC_SCRIPT.test(msg.content) ? 'ur' : 'en'}
+                           lang={scriptLang(msg.content)}
                            style={!isAgent ? { borderColor: color + '38' } : {}}>
                         {msg.content}
                       </div>
@@ -663,7 +665,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
 
                 {partialReply && (
                   <div className="nx-row nx-row-l nx-first">
-                    <div className="nx-bubble nx-bbl-a" dir="auto" lang={ARABIC_SCRIPT.test(partialReply) ? 'ur' : 'en'}>
+                    <div className="nx-bubble nx-bbl-a" dir="auto" lang={scriptLang(partialReply)}>
                       {partialReply}
                       <span className="nx-cursor" style={{ background: color }} />
                     </div>
@@ -672,7 +674,7 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
               </div>
             </section>
 
-            <section className="nx-dock" aria-label="Controls">
+            <section className="nx-dock" aria-label={t.regions.controls}>
               {/* The one place that says what the agent is doing */}
               <p className="nx-status-txt" role="status" aria-live="polite"
                  style={{ opacity: statusOpacity, transition: 'opacity 0.13s ease' }}>
@@ -754,9 +756,9 @@ function NexusAgentInner({ tenantId, token, shopCode, shopName, onReset }: Props
                 </p>
               )}
 
-              <div className="nx-end-policy">
+              {!micBlocked && <div className="nx-end-policy">
                 <span className="nx-close-cue">{t.closeCue}</span>
-              </div>
+              </div>}
 
               {/* Text fallback: for a blocked mic, a noisy shop, or anyone who prefers typing */}
               {typeOpen ? (

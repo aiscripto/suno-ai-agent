@@ -22,6 +22,9 @@ export const dynamic = 'force-dynamic'
  *   { review: ReviewData }                               — review classification update
  *   { error: string }                                    — something went wrong
  */
+const MAX_MESSAGES      = 40     // 5-exchange conversations, generous headroom
+const MAX_MESSAGE_CHARS = 2000
+
 export async function POST(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   const sessionTenant = session?.role === 'agent' && session.tenantId
@@ -45,6 +48,13 @@ export async function POST(req: NextRequest) {
     messages = body.messages
     preferredLanguage = resolvePreferredLanguage(body.language, tenant.supportedLanguages) ?? undefined
     if (!Array.isArray(messages)) throw new Error('messages must be an array')
+    // The system prompt is built on the server; the client may only send the
+    // conversation itself, bounded so it cannot run up model cost.
+    if (messages.length > MAX_MESSAGES) throw new Error('too many messages')
+    for (const m of messages) {
+      if (!m || (m.role !== 'user' && m.role !== 'assistant')) throw new Error('invalid role')
+      if (typeof m.content !== 'string' || m.content.length > MAX_MESSAGE_CHARS) throw new Error('invalid content')
+    }
   } catch {
     return new Response('Invalid request body', { status: 400 })
   }

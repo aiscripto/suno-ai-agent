@@ -10,7 +10,7 @@ web
 
 Primary audience (current):
 
-- **Shop customers in-store.** A shop agent logs in at `/agent-login` on a counter device at the branch; walk-in customers then speak to the agent to give feedback, raise a complaint, or ask for support. The device is shared, used standing, often in a noisy shop, and each conversation is short (120 s session cap, 60 s per turn).
+- **Shop customers in-store.** A shop agent logs in at `/agent-login` on a counter device at the branch; walk-in customers then speak to the agent to give feedback, raise a complaint, or ask for support. The device is shared, used standing, often in a noisy shop, and each conversation is short (at most 5 exchanges, 60 s per turn).
 
 Planned audience (not live):
 
@@ -35,14 +35,14 @@ A voice-first agent that already knows which branch it is standing in, so it nev
 
 - Three agent types per tenant: `support`, `complaints`, `reviews`.
 - Access paths in use: shop-agent login on an in-store device; manager/admin dashboard. The iframe embed path exists in code but is deliberately disabled for now.
-- Conversation cycle: connect → idle → listening → transcribing → thinking → speaking → ended / error, with visible countdowns for the session and turn caps.
+- Conversation cycle: connect → idle → listening → transcribing → thinking → speaking → ended / error, with a visible countdown for the 60 s turn.
 - Tenants and their personas are configured in `src/data/tenants.json`; branch context comes from the session or `shop` parameter.
 - Pakistani retail context (branch codes, cities, regions in `src/data/pakistan-locations.ts`).
 
 ## Capabilities and Constraints
 
 - Voice in via recording + Whisper; replies streamed by sentence and spoken by OpenAI TTS or ElevenLabs; text input exists as a fallback.
-- At most 5 exchanges per conversation; 120 s session cap; 60 s per recording turn.
+- At most 5 exchanges per conversation (enforced in the agent prompt) and 60 s per recording turn. A 120 s overall session cap is **planned but not implemented**; today an idle conversation is cleared by the "Are you still there?" check after 60 s of silence.
 - Per-tenant theming of the embedded widget through CSS variables (`--va-primary*`, `--nx-accent*`); the parent page's theme can drive the accent.
 - Dashboard: overview, reviews, complaints with ticket status and SLA, leads, and a multi-filter Reports tab (period trends, issue heat map, regional roll-up, shop comparison).
 - Stack: Next.js 15 App Router, React 19, Tailwind 3, Recharts; MongoDB via Mongoose.

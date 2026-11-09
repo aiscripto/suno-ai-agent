@@ -8,6 +8,15 @@ import { connectDB, Shop } from '@/lib/db/client'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { CSSProperties } from 'react'
+import { Noto_Nastaliq_Urdu } from 'next/font/google'
+
+// Self-hosted at build time by next/font; only the Urdu widget text uses it.
+const nastaliq = Noto_Nastaliq_Urdu({
+  subsets:  ['arabic'],
+  weight:   ['400', '600'],
+  display:  'swap',
+  variable: '--font-nastaliq',
+})
 
 interface VoicePageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
@@ -108,7 +117,7 @@ export default async function VoicePage({ searchParams }: VoicePageProps) {
       {/* Listens for voice-agent:theme postMessage from the parent page */}
       <ThemeProvider initial={initialTheme} theme={theme} />
 
-      <main className="min-h-dvh bg-surface" data-va-theme={theme} style={mainStyle}>
+      <main className={`min-h-dvh bg-surface ${nastaliq.variable}`} data-va-theme={theme} style={mainStyle}>
         {mode === 'fullscreen' ? (
           <NexusAgent tenantId={tenantId} token={token} shopCode={shopCode} shopName={shop.name} />
         ) : (

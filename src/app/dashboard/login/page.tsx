@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { safeRedirect } from '@/lib/security/safe-redirect'
 
 const STORAGE_KEY = 'dashboard_username'
 
@@ -49,7 +50,7 @@ function LoginForm() {
       }
       localStorage.setItem(STORAGE_KEY, username.trim())
       setSuccess(true)
-      setTimeout(() => router.push(fromParam ?? '/dashboard'), 600)
+      setTimeout(() => router.push(safeRedirect(fromParam, '/dashboard', '/dashboard')), 600)
     } catch {
       setError('Request failed. Please try again.')
       setShakeKey(k => k + 1)

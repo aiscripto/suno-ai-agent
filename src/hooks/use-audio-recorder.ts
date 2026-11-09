@@ -68,10 +68,15 @@ export function useAudioRecorder({
 
   // Leaving the page mid-recording must release the mic, the AudioContext and
   // the VAD timer — and must not send the partial recording for transcription.
-  useEffect(() => () => {
-    discardRef.current = true
-    stop()
-    streamRef.current?.getTracks().forEach((t) => t.stop())
+  useEffect(() => {
+    // Re-arm on (re)mount: React StrictMode mounts → unmounts → mounts in dev,
+    // and a flag left at true would silently drop every later recording.
+    discardRef.current = false
+    return () => {
+      discardRef.current = true
+      stop()
+      streamRef.current?.getTracks().forEach((t) => t.stop())
+    }
   }, [stop])
 
   const start = useCallback(async () => {
@@ -84,6 +89,7 @@ export function useAudioRecorder({
     }
 
     chunksRef.current = []
+    discardRef.current = false
 
     streamRef.current = stream
     // Safari/iPad cannot record WebM; fall back to MP4 (AAC), which Whisper accepts.

@@ -321,12 +321,13 @@ function ThemeSelector({
             key={key}
             type="button"
             onClick={() => onSelect(key)}
+            aria-pressed={active}
             className={`flex min-w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black transition-colors ${
               active ? 'text-white border-transparent shadow-sm' : 'bg-[var(--dash-input)] text-[var(--dash-text)] border-[var(--dash-border)] hover:border-slate-400'
             }`}
             style={active ? { background: theme.accentDark } : undefined}
           >
-            <span className="h-2.5 w-2.5 rounded-full" style={{ background: theme.accent }} />
+            <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: theme.accent }} />
             {theme.name}
           </button>
         )
@@ -1455,7 +1456,7 @@ export function DashboardClient({ data, session, initialTheme }: {
         </div>
 
         <div className="flex flex-col gap-3 border-t border-[var(--dash-border)] bg-[var(--dash-inset)] px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
-          <div className="flex shrink-0 gap-2 overflow-x-auto pb-1 lg:pb-0" aria-label="Dashboard sections">
+          <nav className="flex shrink-0 flex-wrap gap-2 lg:flex-nowrap" aria-label="Dashboard sections">
             <button type="button" aria-current={tab === 'analytics' ? 'page' : undefined} onClick={() => setTab('analytics')} className={tabBtn(tab === 'analytics')} style={tab === 'analytics' ? { background: theme.accentDark } : undefined}>
               Analytics
             </button>
@@ -1473,7 +1474,7 @@ export function DashboardClient({ data, session, initialTheme }: {
             <button type="button" aria-current={tab === 'reports' ? 'page' : undefined} onClick={() => setTab('reports')} className={tabBtn(tab === 'reports')} style={tab === 'reports' ? { background: theme.accentDark } : undefined}>
               Reports
             </button>
-          </div>
+          </nav>
 
           <div className="flex flex-wrap items-center gap-2.5 lg:justify-end">
             <ThemeSelector selected={themeKey} onSelect={selectTheme} />
@@ -1576,7 +1577,7 @@ export function DashboardClient({ data, session, initialTheme }: {
                       {sentimentPie.map((s) => <Cell key={s.name} fill={s.color} />)}
                     </Pie>
                     <Tooltip
-                      contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12 }}
+                      contentStyle={{ background: 'var(--dash-surface)', border: '1px solid var(--dash-border)', color: 'var(--dash-text)', borderRadius: 8, fontSize: 12 }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -1675,7 +1676,7 @@ export function DashboardClient({ data, session, initialTheme }: {
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
                   <XAxis dataKey="month" tick={{ fill: CHART_TICK, fontSize: 11 }} />
                   <YAxis tick={{ fill: CHART_TICK, fontSize: 11 }} />
-                  <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8 }}
+                  <Tooltip contentStyle={{ background: 'var(--dash-surface)', border: '1px solid var(--dash-border)', color: 'var(--dash-text)', borderRadius: 8 }}
                     labelStyle={{ color: '#0f172a' }} />
                   <Line type="monotone" dataKey="count" stroke={theme.accent} strokeWidth={2.5}
                     dot={{ fill: theme.accent, r: 4 }} />
@@ -1719,7 +1720,7 @@ export function DashboardClient({ data, session, initialTheme }: {
           </Card>
 
           <p className="text-center text-slate-700 text-xs mt-8">
-            VoiceAgent · Customer Review Analytics · © {new Date().getFullYear()}
+            NexusAgent · Customer Review Analytics · © {new Date().getFullYear()}
           </p>
         </>
       )}

@@ -107,6 +107,7 @@ export function PeriodTrendChart({ series }: Props) {
             key={opt.key}
             type="button"
             onClick={() => setMetric(opt.key)}
+            aria-pressed={metric === opt.key}
             className={`rounded-full border px-3 py-1 text-xs font-black transition-colors ${
               metric === opt.key
                 ? 'border-transparent text-white shadow-sm'

@@ -3,6 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { safeRedirect } from '@/lib/security/safe-redirect'
 
 interface ShopOption {
   id: string
@@ -87,7 +88,7 @@ function AgentLoginForm() {
       }
       localStorage.setItem(STORAGE_KEY, normalizedUsername)
       setSuccess(true)
-      setTimeout(() => router.push(fromParam ?? '/voice'), 600)
+      setTimeout(() => router.push(safeRedirect(fromParam, '/voice', '/voice')), 600)
     } catch {
       setError('Request failed. Please try again.')
       setShakeKey(k => k + 1)
