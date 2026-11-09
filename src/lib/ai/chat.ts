@@ -14,14 +14,17 @@ interface ShopInfo { name: string; city?: string | null; address?: string | null
 export async function streamChatReply(
   messages: ChatMessage[],
   tenant: TenantConfig,
-  shop?: ShopInfo
+  shop?: ShopInfo,
+  /** Language the customer explicitly chose (already validated); wins over detection. */
+  preferredLanguage?: string,
 ) {
   const client = getLLMClient()
 
   const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')
-  const detectedLanguage = lastUserMsg
-    ? detectLanguage(lastUserMsg.content, tenant.supportedLanguages) ?? undefined
-    : undefined
+  // An explicit choice wins: romanised Urdu ("theek hai") is often detected
+  // as English, but the customer has told us which language they want.
+  const detectedLanguage = preferredLanguage
+    ?? (lastUserMsg ? detectLanguage(lastUserMsg.content, tenant.supportedLanguages) ?? undefined : undefined)
 
   const systemPrompt = buildSystemPrompt(tenant, detectedLanguage, shop)
 

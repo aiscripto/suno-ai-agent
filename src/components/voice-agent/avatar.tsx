@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import type { Phase } from '@/types'
 
 interface AvatarProps {
@@ -8,7 +9,9 @@ interface AvatarProps {
   color?: string
 }
 
-export function AnimatedAvatar({ phase, size = 'lg', color = '#00F5FF' }: AvatarProps) {
+// Memoised: the parent re-renders on every streamed token, this SVG only
+// needs to change when phase, size or colour do.
+export const AnimatedAvatar = memo(function AnimatedAvatar({ phase, size = 'lg', color = '#00E5FF' }: AvatarProps) {
   const isSpeaking  = phase === 'speaking'
   const isListening = phase === 'listening' || phase === 'transcribing'
   const isThinking  = phase === 'thinking'
@@ -337,4 +340,4 @@ export function AnimatedAvatar({ phase, size = 'lg', color = '#00F5FF' }: Avatar
       </div>
     </div>
   )
-}
+})

@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 
 interface UseAudioRecorderOptions {
   /** When false the hook is a no-op — start/stop do nothing. Default true. */
@@ -47,6 +47,9 @@ export function useAudioRecorder({
   const chunksRef   = useRef<Blob[]>([])
   const audioCtxRef = useRef<AudioContext | null>(null)
   const vadTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const streamRef   = useRef<MediaStream | null>(null)
+  // Set on unmount: stop the mic without sending the half-finished recording.
+  const discardRef  = useRef(false)
 
   const stop = useCallback(() => {
     if (vadTimerRef.current) {
@@ -63,6 +66,14 @@ export function useAudioRecorder({
     setHasSpeech(false)
   }, [])
 
+  // Leaving the page mid-recording must release the mic, the AudioContext and
+  // the VAD timer — and must not send the partial recording for transcription.
+  useEffect(() => () => {
+    discardRef.current = true
+    stop()
+    streamRef.current?.getTracks().forEach((t) => t.stop())
+  }, [stop])
+
   const start = useCallback(async () => {
     if (!enabled) return     // no-op when disabled (e.g. when using Web Speech API)
     let stream: MediaStream
@@ -74,11 +85,12 @@ export function useAudioRecorder({
 
     chunksRef.current = []
 
-    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-      ? 'audio/webm;codecs=opus'
-      : 'audio/webm'
+    streamRef.current = stream
+    // Safari/iPad cannot record WebM; fall back to MP4 (AAC), which Whisper accepts.
+    const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+      .find((t) => MediaRecorder.isTypeSupported(t)) ?? ''
 
-    const rec = new MediaRecorder(stream, { mimeType })
+    const rec = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
     mediaRecRef.current = rec
 
     rec.ondataavailable = (e) => {
@@ -86,7 +98,9 @@ export function useAudioRecorder({
     }
     rec.onstop = () => {
       stream.getTracks().forEach((t) => t.stop())
-      const blob = new Blob(chunksRef.current, { type: mimeType })
+      streamRef.current = null
+      if (discardRef.current) return
+      const blob = new Blob(chunksRef.current, { type: rec.mimeType || mimeType || 'audio/webm' })
       onAudioReady(blob)
     }
 

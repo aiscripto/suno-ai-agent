@@ -46,7 +46,7 @@ A voice-first agent that already knows which branch it is standing in, so it nev
 - Per-tenant theming of the embedded widget through CSS variables (`--va-primary*`, `--nx-accent*`); the parent page's theme can drive the accent.
 - Dashboard: overview, reviews, complaints with ticket status and SLA, leads, and a multi-filter Reports tab (period trends, issue heat map, regional roll-up, shop comparison).
 - Stack: Next.js 15 App Router, React 19, Tailwind 3, Recharts; MongoDB via Mongoose.
-- **Interface language: English only for now.** Spoken conversation is multilingual; UI chrome, dashboard and labels are English.
+- **Interface language:** the voice widget follows the EN/اردو toggle. Choosing Urdu switches the widget's on-screen text to Urdu (right-to-left, Nastaliq) and sends Urdu as a language hint to transcription and the agent, when the tenant supports it. Without an explicit choice the tenant's default language and auto-detection apply. The dashboard and logins stay English.
 - **Accessibility standard: undecided.** No formal target recorded yet.
 - **Customer-facing terms (widget):** *conversation* (never "call" or "session"), *microphone*, *tap*, *your reference* (a server ticket ID; never invent one), the agent's own name (e.g. "Zara is speaking"). In-store failures point to *a member of staff*. Manager-facing terms (dashboard): *review*, *complaint*, *suggestion* (not "idea"), *ticket*, *follow-up*.
 

@@ -46,3 +46,16 @@ export function getLangConfig(languageMode: string): LangConfig {
   const name = raw.charAt(0).toUpperCase() + raw.slice(1)
   return { name, whisperCode: code }
 }
+
+/**
+ * Validates a language the customer explicitly chose in the widget (e.g. the
+ * EN/اردو toggle). Returns the lower-case language name only when it is known
+ * and the tenant supports it; otherwise null, so the caller keeps its default.
+ */
+export function resolvePreferredLanguage(input: unknown, supported?: string[]): string | null {
+  if (typeof input !== 'string') return null
+  const name = input.trim().toLowerCase()
+  if (!name || name === 'auto' || !(name in WHISPER_CODES)) return null
+  if (supported && supported.length > 0 && !supported.map((s) => s.toLowerCase()).includes(name)) return null
+  return name
+}

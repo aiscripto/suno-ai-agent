@@ -38,7 +38,11 @@ export function useAudioPlayer({
   const queueRef      = useRef<string[]>([])
   const playingRef    = useRef(false)
   const currentAudio  = useRef<HTMLAudioElement | null>(null)
+  const currentFinish = useRef<(() => void) | null>(null)
   const abortRef      = useRef(false)
+  // Each playback loop gets a generation; a stopped loop that wakes up later
+  // must not touch state that now belongs to a newer loop.
+  const genRef        = useRef(0)
   const fetchCtrlRef  = useRef(new AbortController())
   const requestHeadersRef = useRef<Record<string, string>>(requestHeaders ?? {})
   const onPlaybackErrorRef = useRef(onPlaybackError)
@@ -74,6 +78,7 @@ export function useAudioPlayer({
     if (playingRef.current) return
     if (queueRef.current.length === 0) return
 
+    const gen = ++genRef.current
     playingRef.current = true
     abortRef.current   = false
     setIsPlaying(true)
@@ -100,24 +105,28 @@ export function useAudioPlayer({
         const audio = new Audio(url)
         currentAudio.current = audio
 
-        audio.onended = () => {
+        // One way out for ended, error and stopAll(): always revoke the blob
+        // URL and settle the promise, so an interrupt leaves nothing behind.
+        const finish = () => {
           URL.revokeObjectURL(url)
           currentAudio.current = null
+          currentFinish.current = null
           resolve()
         }
-        audio.onerror = () => {
-          URL.revokeObjectURL(url)
-          currentAudio.current = null
-          resolve()
-        }
-
-        audio.play().catch(resolve)
+        currentFinish.current = finish
+        audio.onended = finish
+        audio.onerror = finish
+        audio.play().catch(finish)
       })
     }
 
+    if (gen !== genRef.current) return   // superseded by stopAll() or a newer loop
+    const stopped = abortRef.current
     playingRef.current = false
     setIsPlaying(false)
-    onPlaybackEnd?.()
+    // A deliberate stopAll() (interrupt, end) is not "playback finished":
+    // reporting it would flip the phase back to idle under the caller.
+    if (!stopped) onPlaybackEnd?.()
   }, [fetchBlob, onPlaybackStart, onPlaybackEnd])
 
   const enqueue = useCallback(
@@ -132,12 +141,14 @@ export function useAudioPlayer({
   const stopAll = useCallback(() => {
     fetchCtrlRef.current.abort()
     abortRef.current = true
+    genRef.current++
     queueRef.current = []
 
     if (currentAudio.current) {
       currentAudio.current.pause()
       currentAudio.current = null
     }
+    currentFinish.current?.()
 
     playingRef.current = false
     setIsPlaying(false)

@@ -4,6 +4,7 @@ import { requireEmbedApiAuth, getTenantFromRequest } from '@/lib/security/embed-
 import { connectDB, Shop } from '@/lib/db/client'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { getTenantById } from '@/lib/tenants/registry'
+import { resolvePreferredLanguage } from '@/lib/config/language'
 import type { ChatMessage } from '@/lib/ai/chat'
 import type { TenantConfig } from '@/lib/tenants/types'
 export { OPTIONS } from '@/lib/utils/cors'
@@ -38,9 +39,11 @@ export async function POST(req: NextRequest) {
     : await resolveShopForChat(tenant, shopCode)
 
   let messages: ChatMessage[]
+  let preferredLanguage: string | undefined
   try {
     const body = await req.json()
     messages = body.messages
+    preferredLanguage = resolvePreferredLanguage(body.language, tenant.supportedLanguages) ?? undefined
     if (!Array.isArray(messages)) throw new Error('messages must be an array')
   } catch {
     return new Response('Invalid request body', { status: 400 })
@@ -119,7 +122,7 @@ export async function POST(req: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        const completion = await streamChatReply(messages, tenant, shop ?? undefined)
+        const completion = await streamChatReply(messages, tenant, shop ?? undefined, preferredLanguage)
 
         let accumulated    = ''
         let sentenceBuffer = ''

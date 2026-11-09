@@ -242,6 +242,16 @@ Soft and round. The mic orb, avatar and live dots are perfect circles; chips, fi
 - **Busy (connecting, thinking):** dark navy fill, muted ring, 0.72 opacity, `not-allowed` cursor.
 - **Countdown:** only the 60s turn countdown is drawn (arc plus a "0:42 turn left" badge). The 120s session cap is **not shown** in the UI yet.
 
+### Mic states (turn-taking)
+- **Idle:** glowing gradient, "Tap to speak".
+- **Recording:** breathe, rings, draining arc; the "0:42 left to speak" badge appears only in the last 15 s.
+- **Agent speaking:** the mic switches to an outlined, non-glowing button ("Tap to speak now") and the agent strip takes an accent border; one tap stops the reply and starts listening.
+- **Microphone unavailable:** the mic greys out ("Microphone unavailable") and the type field leads.
+
+### Language (EN / اردو)
+- The widget's text comes from `src/components/voice-agent/copy.ts` (English and Urdu). Urdu sets `lang="ur" dir="rtl"` on the widget, uses a Nastaliq stack (`Noto Nastaliq Urdu`, `Jameel Noori Nastaleeq`, `Noto Naskh Arabic`) at line-height 1.9, and mirrors the layout. Bubbles are tagged per message by script, so English text inside Urdu mode keeps the Latin face.
+- Header language and End controls are at least 44px tall (counter device).
+
 ### Agent strip
 - **Persona, not hero:** the robot is a 44px avatar beside the agent's name and the branch badge. It never competes with the mic.
 

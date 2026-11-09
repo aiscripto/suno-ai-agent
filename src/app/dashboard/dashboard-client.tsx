@@ -530,7 +530,7 @@ function PhonePad({ value, onChange }: { value: string; onChange: (v: string) =>
         </span>
         {value && (
           <button onClick={() => onChange('')}
-            className="text-slate-500 hover:text-red-400 text-xs px-2 py-0.5 rounded transition-colors">
+            className="text-[var(--dash-muted)] hover:text-red-700 text-xs px-2 py-0.5 rounded transition-colors">
             Clear
           </button>
         )}
@@ -777,7 +777,7 @@ function TranscriptModal({
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 italic">No contact details provided</p>
+                <p className="text-xs text-[var(--dash-muted)] italic">No contact details provided</p>
               )
               })()}
             </div>
@@ -1194,7 +1194,7 @@ function ReviewsPanel({ reviews: initial }: { reviews: DashboardData['recentRevi
                   const n = fmtContact(r.leadName)
                   const p = fmtContact(r.leadPhone)
                   return (n || p) ? (
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-[var(--dash-muted)] mt-1">
                       {n && `👤 ${n}`}{p && `${n ? ' · ' : ''}📞 ${p}`}
                     </p>
                   ) : null
@@ -1252,7 +1252,9 @@ function SearchPanel() {
         </span>
       </div>
       <div className="mb-3 flex flex-col gap-2 sm:flex-row">
+        <label htmlFor="review-ask" className="sr-only">Ask a question about your reviews</label>
         <input
+          id="review-ask"
           ref={inputRef}
           type="text" value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -1278,15 +1280,15 @@ function SearchPanel() {
         </div>
       )}
       {loading && (
-        <div className="flex items-center gap-3 py-6 text-slate-400 text-sm">
+        <div role="status" className="flex items-center gap-3 py-6 text-[var(--dash-muted)] text-sm">
           <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
           Analysing reviews…
         </div>
       )}
-      {error && <p className="text-sm text-red-400 mt-2">❌ {error}</p>}
+      {error && <p role="alert" className="text-sm mt-2" style={{ color: 'var(--dash-ink-complaint)' }}>{error}</p>}
       {result && (
         <div className="mt-4">
-          <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
+          <div aria-live="polite" className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
             <p className="text-xs text-blue-700 font-bold mb-2 uppercase tracking-widest">AI analysis</p>
             <p className="text-slate-800 text-sm leading-relaxed">{result.answer}</p>
           </div>
@@ -1317,7 +1319,7 @@ function SearchPanel() {
             </>
           )}
           <button onClick={() => { setResult(null); setQuery(''); inputRef.current?.focus() }}
-            className="mt-4 text-xs text-slate-500 hover:text-slate-300 underline">
+            className="mt-4 text-xs text-[var(--dash-muted)] hover:text-[var(--dash-heading)] underline">
             ✕ Clear search
           </button>
         </div>
@@ -1453,11 +1455,11 @@ export function DashboardClient({ data, session, initialTheme }: {
         </div>
 
         <div className="flex flex-col gap-3 border-t border-[var(--dash-border)] bg-[var(--dash-inset)] px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
-          <div className="flex shrink-0 gap-2 overflow-x-auto pb-1 lg:pb-0" role="tablist" aria-label="Dashboard sections">
-            <button type="button" role="tab" aria-selected={tab === 'analytics'} onClick={() => setTab('analytics')} className={tabBtn(tab === 'analytics')} style={tab === 'analytics' ? { background: theme.accentDark } : undefined}>
+          <div className="flex shrink-0 gap-2 overflow-x-auto pb-1 lg:pb-0" aria-label="Dashboard sections">
+            <button type="button" aria-current={tab === 'analytics' ? 'page' : undefined} onClick={() => setTab('analytics')} className={tabBtn(tab === 'analytics')} style={tab === 'analytics' ? { background: theme.accentDark } : undefined}>
               Analytics
             </button>
-            <button type="button" role="tab" aria-selected={tab === 'reviews'} onClick={() => setTab('reviews')} className={tabBtn(tab === 'reviews')} style={tab === 'reviews' ? { background: theme.accentDark } : undefined}>
+            <button type="button" aria-current={tab === 'reviews' ? 'page' : undefined} onClick={() => setTab('reviews')} className={tabBtn(tab === 'reviews')} style={tab === 'reviews' ? { background: theme.accentDark } : undefined}>
               Reviews
               {pendingFollowUps > 0 && (
                 <span className="ml-2 rounded-full bg-orange-700 px-2 py-0.5 text-xs font-black text-white">
@@ -1465,10 +1467,10 @@ export function DashboardClient({ data, session, initialTheme }: {
                 </span>
               )}
             </button>
-            <button type="button" role="tab" aria-selected={tab === 'shops'} onClick={() => setTab('shops')} className={tabBtn(tab === 'shops')} style={tab === 'shops' ? { background: theme.accentDark } : undefined}>
+            <button type="button" aria-current={tab === 'shops' ? 'page' : undefined} onClick={() => setTab('shops')} className={tabBtn(tab === 'shops')} style={tab === 'shops' ? { background: theme.accentDark } : undefined}>
               Shops
             </button>
-            <button type="button" role="tab" aria-selected={tab === 'reports'} onClick={() => setTab('reports')} className={tabBtn(tab === 'reports')} style={tab === 'reports' ? { background: theme.accentDark } : undefined}>
+            <button type="button" aria-current={tab === 'reports' ? 'page' : undefined} onClick={() => setTab('reports')} className={tabBtn(tab === 'reports')} style={tab === 'reports' ? { background: theme.accentDark } : undefined}>
               Reports
             </button>
           </div>
@@ -1930,26 +1932,26 @@ function ShopEditCard({
         </div>
       )}
       {errMsg && (
-        <p className="text-sm text-red-600">{errMsg}</p>
+        <p role="alert" className="text-sm text-red-700">{errMsg}</p>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Name */}
         <div>
-          <label className={labelCls}>Name</label>
-          <input type="text" value={form.name} onChange={set('name')} className={shopInputCls} />
+          <label htmlFor={`shop-name-${shop.id}`} className={labelCls}>Name</label>
+          <input id={`shop-name-${shop.id}`} type="text" value={form.name} onChange={set('name')} className={shopInputCls} />
         </div>
 
         {/* Branch Code — readonly */}
         <div>
-          <label className={labelCls}>Branch Code</label>
-          <input type="text" value={shop.branchCode ?? ''} disabled readOnly className={`${shopInputCls} opacity-60 cursor-not-allowed bg-slate-50`} />
+          <label htmlFor={`shop-branch-code-${shop.id}`} className={labelCls}>Branch Code</label>
+          <input id={`shop-branch-code-${shop.id}`} type="text" value={shop.branchCode ?? ''} disabled readOnly className={`${shopInputCls} opacity-60 cursor-not-allowed bg-slate-50`} />
         </div>
 
         {/* State/Province */}
         <div>
-          <label className={labelCls}>Province / State</label>
-          <select value={form.state} onChange={handleStateChange} className={shopInputCls}>
+          <label htmlFor={`shop-province-state-${shop.id}`} className={labelCls}>Province / State</label>
+          <select id={`shop-province-state-${shop.id}`} value={form.state} onChange={handleStateChange} className={shopInputCls}>
             <option value="">— Select province —</option>
             {PROVINCES.map((p) => (
               <option key={p} value={p}>{p}</option>
@@ -1959,11 +1961,11 @@ function ShopEditCard({
 
         {/* City — dropdown if province has cities, otherwise free text */}
         <div>
-          <label className={labelCls}>City</label>
+          <label htmlFor={`shop-city-${shop.id}`} className={labelCls}>City</label>
           {freeCityInput ? (
-            <input type="text" value={form.city} onChange={set('city')} placeholder="Enter city" className={shopInputCls} />
+            <input id={`shop-city-${shop.id}`} type="text" value={form.city} onChange={set('city')} placeholder="Enter city" className={shopInputCls} />
           ) : (
-            <select value={form.city} onChange={set('city')} className={shopInputCls}>
+            <select id={`shop-city-${shop.id}`} value={form.city} onChange={set('city')} className={shopInputCls}>
               <option value="">— Select city —</option>
               {cityOptions.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -1974,44 +1976,44 @@ function ShopEditCard({
 
         {/* Town */}
         <div>
-          <label className={labelCls}>Town / Area</label>
-          <input type="text" value={form.town} onChange={set('town')} placeholder="e.g. Model Town" className={shopInputCls} />
+          <label htmlFor={`shop-town-area-${shop.id}`} className={labelCls}>Town / Area</label>
+          <input id={`shop-town-area-${shop.id}`} type="text" value={form.town} onChange={set('town')} placeholder="e.g. Model Town" className={shopInputCls} />
         </div>
 
         {/* Phone */}
         <div>
-          <label className={labelCls}>Phone</label>
-          <input type="text" value={form.phone} onChange={set('phone')} placeholder="+92 XX XXXXXXX" className={shopInputCls} />
+          <label htmlFor={`shop-phone-${shop.id}`} className={labelCls}>Phone</label>
+          <input id={`shop-phone-${shop.id}`} type="text" value={form.phone} onChange={set('phone')} placeholder="+92 XX XXXXXXX" className={shopInputCls} />
         </div>
 
         {/* Mobile */}
         <div>
-          <label className={labelCls}>Mobile</label>
-          <input type="text" value={form.mobile} onChange={set('mobile')} placeholder="+92 3XX XXXXXXX" className={shopInputCls} />
+          <label htmlFor={`shop-mobile-${shop.id}`} className={labelCls}>Mobile</label>
+          <input id={`shop-mobile-${shop.id}`} type="text" value={form.mobile} onChange={set('mobile')} placeholder="+92 3XX XXXXXXX" className={shopInputCls} />
         </div>
 
         {/* Email */}
         <div>
-          <label className={labelCls}>Email</label>
-          <input type="email" value={form.email} onChange={set('email')} placeholder="shop@example.com" className={shopInputCls} />
+          <label htmlFor={`shop-email-${shop.id}`} className={labelCls}>Email</label>
+          <input id={`shop-email-${shop.id}`} type="email" value={form.email} onChange={set('email')} placeholder="shop@example.com" className={shopInputCls} />
         </div>
 
         {/* Address — full width */}
         <div className="sm:col-span-2">
-          <label className={labelCls}>Address</label>
-          <textarea rows={2} value={form.address} onChange={set('address')} placeholder="Street address" className={shopInputCls} />
+          <label htmlFor={`shop-address-${shop.id}`} className={labelCls}>Address</label>
+          <textarea id={`shop-address-${shop.id}`} rows={2} value={form.address} onChange={set('address')} placeholder="Street address" className={shopInputCls} />
         </div>
 
         {/* Latitude */}
         <div>
-          <label className={labelCls}>Latitude</label>
-          <input type="number" step="0.000001" value={form.lat} onChange={set('lat')} placeholder="e.g. 33.6844" className={shopInputCls} />
+          <label htmlFor={`shop-latitude-${shop.id}`} className={labelCls}>Latitude</label>
+          <input id={`shop-latitude-${shop.id}`} type="number" step="0.000001" value={form.lat} onChange={set('lat')} placeholder="e.g. 33.6844" className={shopInputCls} />
         </div>
 
         {/* Longitude */}
         <div>
-          <label className={labelCls}>Longitude</label>
-          <input type="number" step="0.000001" value={form.lng} onChange={set('lng')} placeholder="e.g. 73.0479" className={shopInputCls} />
+          <label htmlFor={`shop-longitude-${shop.id}`} className={labelCls}>Longitude</label>
+          <input id={`shop-longitude-${shop.id}`} type="number" step="0.000001" value={form.lng} onChange={set('lng')} placeholder="e.g. 73.0479" className={shopInputCls} />
         </div>
 
         {/* Detect location button — full width */}
@@ -2068,7 +2070,7 @@ function ShopsPanel() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 py-16 text-slate-400 text-sm justify-center">
+      <div role="status" className="flex items-center gap-3 py-16 text-[var(--dash-muted)] text-sm justify-center">
         <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
         Loading shops…
       </div>
@@ -2078,7 +2080,7 @@ function ShopsPanel() {
   if (shops.length === 0) {
     return (
       <div className="py-16 text-center">
-        <p className="text-slate-400 text-sm">No shops found.</p>
+        <p className="text-[var(--dash-muted)] text-sm">No shops found.</p>
       </div>
     )
   }

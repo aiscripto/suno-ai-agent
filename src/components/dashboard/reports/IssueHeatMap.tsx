@@ -73,18 +73,19 @@ export function IssueHeatMap({ cells }: Props) {
         <table className="min-w-full border-collapse">
           <thead>
             <tr>
-              <th className="min-w-[160px] px-3 py-2 text-left text-[0.62rem] font-black uppercase tracking-widest text-[var(--dash-muted)] bg-[var(--dash-inset)] border border-[var(--dash-border)]">
+              <th scope="col" className="min-w-[160px] px-3 py-2 text-left text-[0.62rem] font-black uppercase tracking-widest text-[var(--dash-muted)] bg-[var(--dash-inset)] border border-[var(--dash-border)]">
                 Outlet
               </th>
               {CATEGORIES.map((cat) => (
                 <th
                   key={cat}
+                  scope="col"
                   className="px-3 py-2 text-center text-[0.62rem] font-black uppercase tracking-widest text-[var(--dash-muted)] bg-[var(--dash-inset)] border border-[var(--dash-border)]"
                 >
                   {CATEGORY_LABEL[cat]}
                 </th>
               ))}
-              <th className="px-3 py-2 text-center text-[0.62rem] font-black uppercase tracking-widest text-[var(--dash-muted)] bg-[var(--dash-inset)] border border-[var(--dash-border)]">
+              <th scope="col" className="px-3 py-2 text-center text-[0.62rem] font-black uppercase tracking-widest text-[var(--dash-muted)] bg-[var(--dash-inset)] border border-[var(--dash-border)]">
                 Total
               </th>
             </tr>
@@ -92,12 +93,12 @@ export function IssueHeatMap({ cells }: Props) {
           <tbody>
             {sortedShopIds.map((shopId) => (
               <tr key={shopId}>
-                <td className="px-3 py-2 border border-[var(--dash-border)] bg-[var(--dash-surface)]">
+                <th scope="row" className="px-3 py-2 text-left font-normal border border-[var(--dash-border)] bg-[var(--dash-surface)]">
                   <p className="text-xs font-black text-[var(--dash-heading)] leading-tight truncate max-w-[140px]">
                     {shopNames[shopId]}
                   </p>
                   <p className="text-[0.62rem] text-[var(--dash-muted)] mt-0.5">{shopTotals[shopId]} issues</p>
-                </td>
+                </th>
                 {CATEGORIES.map((cat) => {
                   const cell = cellMap[`${shopId}__${cat}`]
                   const count = cell?.count ?? 0
@@ -118,7 +119,7 @@ export function IssueHeatMap({ cells }: Props) {
                           {count}
                         </button>
                       ) : (
-                        <span className="block py-3 px-2" aria-label="0 issues" />
+                        <span className="block py-3 px-2"><span className="sr-only">0</span></span>
                       )}
                     </td>
                   )

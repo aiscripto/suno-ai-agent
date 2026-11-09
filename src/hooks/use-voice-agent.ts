@@ -22,7 +22,7 @@ import type {
 // Raw exception text ("TypeError: Failed to fetch") never reaches the customer.
 // Each error gets a kind so the UI can offer the matching recovery action.
 const ERROR_COPY: Record<ErrorKind, string> = {
-  mic:     'The microphone is blocked. Allow microphone access in your browser, or type your message instead.',
+  mic:     'The microphone is not working. Please type your message below, or ask a member of staff.',
   network: 'We lost the connection. Please try again in a moment.',
   limit:   'The service is busy right now. Please try again in a minute.',
   save:    'Your conversation ended, but we could not save it. Please try again.',
@@ -54,7 +54,7 @@ function reducer(state: VoiceAgentState, action: VoiceAgentAction): VoiceAgentSt
       return { ...state, phase: 'idle' }
 
     case 'START_LISTENING':
-      return { ...state, phase: 'listening', error: null, errorKind: null }
+      return { ...state, phase: 'listening', error: null, errorKind: null, partialReply: '' }
 
     case 'STOP_LISTENING':
       return { ...state, phase: 'transcribing' }
@@ -175,6 +175,13 @@ export function useVoiceAgent({
   const [state, dispatch]     = useReducer(reducer, initialState)
   const [voice, setVoice]     = useState<OpenAIVoice>('nova')
   const [language, setLang]   = useState('English')
+  // Set only when the customer taps EN/اردو; sent to /api/transcribe and
+  // /api/chat as a hint. The tenant's default stays in charge until then.
+  const chosenLanguageRef = useRef<string | null>(null)
+  const chooseLanguage = useCallback((lang: string) => {
+    chosenLanguageRef.current = lang.toLowerCase()
+    setLang(lang)
+  }, [])
   const [agentName, setAgent] = useState('Agent')
   const [companyName, setCompany] = useState('')
   const [outputMode, setOutputModeState] = useState<'voice' | 'text'>(defaultOutputMode)
@@ -249,7 +256,7 @@ export function useVoiceAgent({
       const res = await fetch('/api/chat', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', ...embedHeadersRef.current },
-        body:    JSON.stringify({ messages }),
+        body:    JSON.stringify({ messages, ...(chosenLanguageRef.current ? { language: chosenLanguageRef.current } : {}) }),
         signal,
       })
 
@@ -400,7 +407,9 @@ export function useVoiceAgent({
 
   async function processAudio(blob: Blob, options: { endAfterTranscription?: boolean } = {}) {
     const form = new FormData()
-    form.append('audio', blob, 'audio.webm')
+    // Whisper infers the format from the file name: Safari records MP4.
+    form.append('audio', blob, blob.type.includes('mp4') ? 'audio.mp4' : 'audio.webm')
+    if (chosenLanguageRef.current) form.append('language', chosenLanguageRef.current)
     let userText: string
     try {
       const res  = await fetch('/api/transcribe', {
@@ -501,7 +510,17 @@ export function useVoiceAgent({
   // ── Mic controls ─────────────────────────────────────────────────────────────
   const toggleMic = useCallback(() => {
     const phase = stateRef.current.phase
-    if (phase === 'speaking' || phase === 'thinking') {
+    if (phase === 'speaking') {
+      // One tap to take the turn: stop Zara (audio and any reply still
+      // streaming in), then start listening straight away.
+      networkAbortRef.current.abort()
+      networkAbortRef.current = new AbortController()
+      stopAll()
+      dispatch({ type: 'START_LISTENING' })
+      startRec().catch((err) => dispatch(errorAction(err, 'mic')))
+      return
+    }
+    if (phase === 'thinking') {
       stopAll()
       dispatch({ type: 'CONNECTED' })
       return
@@ -594,7 +613,7 @@ export function useVoiceAgent({
     webSpeechSupported: speechRec.isSupported,
     setVoice:           handleSetVoice,
     setOutputMode,
-    setLanguage:        setLang,
+    setLanguage:        chooseLanguage,
     stopPlayback:       stopAll,
     toggleMic,
     pressMic,

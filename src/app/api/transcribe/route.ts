@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { transcribeAudio } from '@/lib/ai/transcribe'
 import { isInvalidApiKeyError, isMissingProviderError, isQuotaError } from '@/lib/ai/errors'
-import { getLangConfig } from '@/lib/config/language'
+import { getLangConfig, resolvePreferredLanguage } from '@/lib/config/language'
 import { requireEmbedApiAuth, getTenantFromRequest } from '@/lib/security/embed-auth'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { getTenantById } from '@/lib/tenants/registry'
@@ -38,7 +38,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const tenant = sessionTenant ?? getTenantFromRequest(req)
-    const lang   = getLangConfig(tenant.languageMode)
+    // The customer's explicit choice (EN/اردو) steers Whisper when the tenant supports it.
+    const chosen = resolvePreferredLanguage(formData.get('language'), tenant.supportedLanguages)
+    const lang   = getLangConfig(chosen ?? tenant.languageMode)
     const raw    = await transcribeAudio(audio, lang.whisperCode, tenant.openaiApiKey)
     const text   = normalizeSpeechTranscript(raw)
     return NextResponse.json({ text })
