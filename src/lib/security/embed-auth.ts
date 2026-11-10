@@ -18,17 +18,23 @@ function headersFromRequest(req: NextRequest) {
 }
 
 /**
- * Guards a route when EMBED_AUTH_ENABLED=true.
+ * Guard for the voice APIs (config, chat, transcribe, speak, summarize) when
+ * the caller has NO agent session. Callers with an agent session never reach
+ * this function.
+ *
+ * - EMBED_AUTH_ENABLED=false (default): the widget is login-only (decision
+ *   2026-11-09), so anonymous calls are refused. This stops anyone on the
+ *   internet from running up OpenAI / ElevenLabs costs.
+ * - EMBED_AUTH_ENABLED=true: iframe embeds authenticate with tenant
+ *   credentials (token pair, API key or allowed domain).
+ *
  * Returns a 401 response on failure, null on success.
  */
 export function requireEmbedApiAuth(req: NextRequest): NextResponse | null {
   const headers = headersFromRequest(req)
 
   if (!isEmbedAuthEnabled()) {
-    if (headers.tenantId && !resolveTenantFromHeaders(headers, { enforceToken: false })) {
-      return NextResponse.json({ error: 'Unknown tenant' }, { status: 400 })
-    }
-    return null
+    return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
   }
 
   const tenant = resolveTenantFromHeaders(headers)

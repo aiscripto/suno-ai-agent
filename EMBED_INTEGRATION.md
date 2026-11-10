@@ -37,7 +37,7 @@ EMBED_TENANTS=[{"id":"customer-a","token":"replace-with-long-random-secret","all
 - `token`: Shared secret for this embed link.
 - `allowedParents`: Optional parent origins allowed to host this tenant.
 
-If `EMBED_AUTH_ENABLED=false` (default), the app works without tenant auth.
+If `EMBED_AUTH_ENABLED=false` (default), the voice APIs (`/api/config`, `/api/chat`, `/api/transcribe`, `/api/speak`, `/api/summarize`) require a signed-in shop agent and refuse anonymous calls with 401. Iframe embedding is currently off by decision (2026-11-09); turn this on, with tenant credentials, when iframe support returns.
 
 ## 4) Give customer iframe snippet
 
