@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useCallback, useMemo, type CSSProperties }
 import { useRouter } from 'next/navigation'
 import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
   LineChart, Line, CartesianGrid,
 } from 'recharts'
 import type { DashboardData } from '@/lib/db/dashboard-query'
@@ -12,48 +11,55 @@ import type { AppSession } from '@/lib/auth/session'
 import { PROVINCES, CITIES_BY_PROVINCE } from '@/data/pakistan-locations'
 import { ReportsTab } from '@/components/dashboard/reports/ReportsTab'
 import { useModalA11y } from '@/hooks/use-modal-a11y'
+import {
+  ThreeDColumnChart,
+  ThreeDDonutChart,
+  ThreeDHorizontalBar,
+  ThreeDMetricCard,
+  ThreeDInsightCard,
+} from '@/components/dashboard/3d'
 
 // ── Emoji maps ─────────────────────────────────────────────────────────────────
 const SENTIMENT_EMOJI: Record<string, string> = {
-  positive:   '✅',
-  negative:   '⚠️',
-  complaint:  '🚨',
+  positive: '✅',
+  negative: '⚠️',
+  complaint: '🚨',
   suggestion: '💡',
 }
 const SENTIMENT_LABEL: Record<string, string> = {
-  positive:   'Positive',
-  negative:   'Negative',
-  complaint:  'Complaint',
+  positive: 'Positive',
+  negative: 'Negative',
+  complaint: 'Complaint',
   suggestion: 'Suggestion',
 }
 const SENTIMENT_COLOR: Record<string, string> = {
-  positive:   '#22c55e',
-  negative:   '#f97316',
-  complaint:  '#ef4444',
+  positive: '#22c55e',
+  negative: '#f97316',
+  complaint: '#ef4444',
   suggestion: '#6366f1',
 }
 // Bright SENTIMENT_COLOR is for bars and dots only. Text uses these per-theme
 // ink tokens, which pass WCAG AA on light and dark dashboard surfaces.
 const SENTIMENT_INK: Record<string, string> = {
-  positive:   'var(--dash-ink-positive)',
-  negative:   'var(--dash-ink-negative)',
-  complaint:  'var(--dash-ink-complaint)',
+  positive: 'var(--dash-ink-positive)',
+  negative: 'var(--dash-ink-negative)',
+  complaint: 'var(--dash-ink-complaint)',
   suggestion: 'var(--dash-ink-suggestion)',
 }
 const CATEGORY_EMOJI: Record<string, string> = {
-  product:   '🍽️',
-  service:   '⚡',
-  behavioral:'👤',
-  facility:  '🏢',
-  pricing:   '💰',
-  general:   '⭐',
+  product: '🍽️',
+  service: '⚡',
+  behavioral: '👤',
+  facility: '🏢',
+  pricing: '💰',
+  general: '⭐',
 }
 const RATING_EMOJI: Record<number, string> = {
   5: '🌟', 4: '✨', 3: '😐', 2: '😞', 1: '😡',
 }
 // ── Display helpers ────────────────────────────────────────────────────────────
 // Strip default sentinel values stored when the customer didn't share details.
-const UNKNOWN_NAME  = 'Unknown'
+const UNKNOWN_NAME = 'Unknown'
 const UNKNOWN_EMAIL = 'unknown@email.com'
 function fmtContact(v: string | null | undefined): string | null {
   if (!v || v === 'null' || v === UNKNOWN_NAME || v === UNKNOWN_EMAIL) return null
@@ -128,12 +134,12 @@ const DASHBOARD_THEMES: Record<DashboardThemeKey, {
       '--dash-shadow': 'rgb(15 23 42 / 0.08)',
       '--dash-ring': 'rgb(219 234 254 / 0.9)',
       '--dash-accent': '#1d4ed8',
-      '--dash-ink-positive':   '#15803d',
-      '--dash-ink-negative':   '#c2410c',
-      '--dash-ink-complaint':  '#b91c1c',
+      '--dash-ink-positive': '#15803d',
+      '--dash-ink-negative': '#c2410c',
+      '--dash-ink-complaint': '#b91c1c',
       '--dash-ink-suggestion': '#4f46e5',
-      '--dash-ink-rating':     '#b45309',
-      '--dash-ink-info':       '#1d4ed8',
+      '--dash-ink-rating': '#b45309',
+      '--dash-ink-info': '#1d4ed8',
     } as CSSProperties,
     statPanel: 'bg-blue-50 text-blue-900 border-blue-100',
     tabHover: 'hover:border-blue-300 hover:text-blue-700',
@@ -160,12 +166,12 @@ const DASHBOARD_THEMES: Record<DashboardThemeKey, {
       '--dash-shadow': 'rgb(8 47 73 / 0.09)',
       '--dash-ring': 'rgb(207 250 254 / 0.9)',
       '--dash-accent': '#0e7490',
-      '--dash-ink-positive':   '#15803d',
-      '--dash-ink-negative':   '#c2410c',
-      '--dash-ink-complaint':  '#b91c1c',
+      '--dash-ink-positive': '#15803d',
+      '--dash-ink-negative': '#c2410c',
+      '--dash-ink-complaint': '#b91c1c',
       '--dash-ink-suggestion': '#4f46e5',
-      '--dash-ink-rating':     '#b45309',
-      '--dash-ink-info':       '#1d4ed8',
+      '--dash-ink-rating': '#b45309',
+      '--dash-ink-info': '#1d4ed8',
     } as CSSProperties,
     statPanel: 'bg-cyan-50 text-cyan-900 border-cyan-100',
     tabHover: 'hover:border-cyan-300 hover:text-cyan-700',
@@ -192,12 +198,12 @@ const DASHBOARD_THEMES: Record<DashboardThemeKey, {
       '--dash-shadow': 'rgb(0 0 0 / 0.28)',
       '--dash-ring': 'rgb(96 165 250 / 0.22)',
       '--dash-accent': '#60a5fa',
-      '--dash-ink-positive':   '#86efac',
-      '--dash-ink-negative':   '#fdba74',
-      '--dash-ink-complaint':  '#fca5a5',
+      '--dash-ink-positive': '#86efac',
+      '--dash-ink-negative': '#fdba74',
+      '--dash-ink-complaint': '#fca5a5',
       '--dash-ink-suggestion': '#a5b4fc',
-      '--dash-ink-rating':     '#fcd34d',
-      '--dash-ink-info':       '#93c5fd',
+      '--dash-ink-rating': '#fcd34d',
+      '--dash-ink-info': '#93c5fd',
     } as CSSProperties,
     statPanel: 'bg-slate-800/80 text-slate-100 border-slate-700',
     tabHover: 'hover:border-blue-300 hover:text-blue-200',
@@ -224,12 +230,12 @@ const DASHBOARD_THEMES: Record<DashboardThemeKey, {
       '--dash-shadow': 'rgb(0 0 0 / 0.36)',
       '--dash-ring': 'rgb(167 139 250 / 0.24)',
       '--dash-accent': '#a78bfa',
-      '--dash-ink-positive':   '#86efac',
-      '--dash-ink-negative':   '#fdba74',
-      '--dash-ink-complaint':  '#fca5a5',
+      '--dash-ink-positive': '#86efac',
+      '--dash-ink-negative': '#fdba74',
+      '--dash-ink-complaint': '#fca5a5',
       '--dash-ink-suggestion': '#a5b4fc',
-      '--dash-ink-rating':     '#fcd34d',
-      '--dash-ink-info':       '#93c5fd',
+      '--dash-ink-rating': '#fcd34d',
+      '--dash-ink-info': '#93c5fd',
     } as CSSProperties,
     statPanel: 'bg-violet-500/10 text-violet-100 border-violet-400/25',
     tabHover: 'hover:border-violet-300 hover:text-violet-200',
@@ -253,58 +259,6 @@ function Dot({ color = DASHBOARD_ACCENT }: { color?: string }) {
   return <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: color }} />
 }
 
-// ── KPI Card ───────────────────────────────────────────────────────────────────
-function KpiCard({
-  label, value, sub, color = '#6c8ef7', highlight = false,
-}: {
-  label: string; value: string | number
-  sub?: string; color?: string; highlight?: boolean
-}) {
-  return (
-    <div className={`${surfaceCls} flex min-h-[6.5rem] flex-col justify-between overflow-hidden rounded-xl border p-4 ${highlight ? 'border-blue-300 ring-2 ring-blue-50' : ''}`}>
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-[0.66rem] font-black text-[var(--dash-muted)] uppercase tracking-[0.14em]">{label}</span>
-        <span className="h-2 w-2 rounded-full shrink-0" style={{ background: color }} />
-      </div>
-      <span className="mt-3 text-2xl font-black leading-none text-[var(--dash-heading)] sm:text-3xl">{value}</span>
-      {sub && <span className="mt-2 text-xs font-semibold text-[var(--dash-muted)]">{sub}</span>}
-      {!sub && <span className="mt-2 text-xs font-semibold text-[var(--dash-subtle)]">Current dataset</span>}
-    </div>
-  )
-}
-
-function InsightCard({
-  label,
-  value,
-  detail,
-  tone = 'blue',
-}: {
-  label: string
-  value: string | number
-  detail: string
-  tone?: 'blue' | 'green' | 'amber' | 'red' | 'slate'
-}) {
-  // Tone is carried by a small marker and the value's ink colour; the card
-  // itself uses the theme surface so it works in light, day, dark and night.
-  const ink = {
-    blue:  'var(--dash-ink-info)',
-    green: 'var(--dash-ink-positive)',
-    amber: 'var(--dash-ink-rating)',
-    red:   'var(--dash-ink-complaint)',
-    slate: 'var(--dash-heading)',
-  }[tone]
-  return (
-    <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-surface)] p-3.5">
-      <p className="flex items-center gap-1.5 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[var(--dash-muted)]">
-        <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ background: ink }} />
-        {label}
-      </p>
-      <p className="mt-2 text-xl font-black leading-tight" style={{ color: ink }}>{value}</p>
-      <p className="mt-1.5 text-xs font-semibold leading-5 text-[var(--dash-text)]">{detail}</p>
-    </div>
-  )
-}
-
 function ThemeSelector({
   selected,
   onSelect,
@@ -322,9 +276,8 @@ function ThemeSelector({
             type="button"
             onClick={() => onSelect(key)}
             aria-pressed={active}
-            className={`flex min-w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black transition-colors ${
-              active ? 'text-white border-transparent shadow-sm' : 'bg-[var(--dash-input)] text-[var(--dash-text)] border-[var(--dash-border)] hover:border-slate-400'
-            }`}
+            className={`flex min-w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black transition-colors ${active ? 'text-white border-transparent shadow-sm' : 'bg-[var(--dash-input)] text-[var(--dash-text)] border-[var(--dash-border)] hover:border-slate-400'
+              }`}
             style={active ? { background: theme.accentDark } : undefined}
           >
             <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: theme.accent }} />
@@ -336,64 +289,41 @@ function ThemeSelector({
   )
 }
 
-// ── Sentiment Row ──────────────────────────────────────────────────────────────
-function SentimentRow({ sentiment, count, total }: { sentiment: string; count: number; total: number }) {
-  const pct   = total ? Math.round((count / total) * 100) : 0
-  const color = SENTIMENT_COLOR[sentiment] ?? '#6c8ef7'
-  return (
-    <div className="flex items-center gap-3 py-2.5">
-      <Dot color={color} />
-      <span className="text-sm font-semibold text-slate-700 w-24">{SENTIMENT_LABEL[sentiment]}</span>
-      <div className="flex-1 bg-slate-100 rounded-full h-2.5">
-        <div className="h-2.5 rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
-      </div>
-      <span className="text-sm font-black w-8 text-right" style={{ color: SENTIMENT_INK[sentiment] ?? 'var(--dash-heading)' }}>{count}</span>
-      <span className="text-xs text-slate-500 w-10 text-right">{pct}%</span>
-    </div>
-  )
-}
-
-// ── Category Row ───────────────────────────────────────────────────────────────
-function CategoryRow({ name, data, maxTotal }: {
-  name: string
-  data: { positive: number; negative: number; complaint: number; suggestion: number; total: number }
-  maxTotal: number
-}) {
-  const pctPos  = maxTotal ? (data.positive   / maxTotal) * 100 : 0
-  const pctNeg  = maxTotal ? (data.negative   / maxTotal) * 100 : 0
-  const pctComp = maxTotal ? (data.complaint  / maxTotal) * 100 : 0
-  const pctSugg = maxTotal ? (data.suggestion / maxTotal) * 100 : 0
-
-  return (
-    <div className="grid grid-cols-[minmax(5rem,8rem)_1fr] sm:grid-cols-[8rem_1fr_auto] items-center gap-3 py-3 border-b border-slate-100 last:border-0">
-      <span className="text-sm font-bold text-slate-700 capitalize min-w-0 break-words">{name}</span>
-      <div className="flex min-w-0 gap-0.5 h-5 rounded-lg overflow-hidden bg-slate-100">
-        {data.positive   > 0 && <div style={{ width: `${pctPos}%`,  background: '#22c55e' }} title={`Positive ${data.positive}`} />}
-        {data.negative   > 0 && <div style={{ width: `${pctNeg}%`,  background: '#f97316' }} title={`Negative ${data.negative}`} />}
-        {data.complaint  > 0 && <div style={{ width: `${pctComp}%`, background: '#ef4444' }} title={`Complaint ${data.complaint}`} />}
-        {data.suggestion > 0 && <div style={{ width: `${pctSugg}%`, background: '#6366f1' }} title={`Suggestion ${data.suggestion}`} />}
-      </div>
-      <div className="col-span-2 sm:col-span-1 flex gap-2 text-xs font-bold flex-wrap justify-start sm:justify-end">
-        <span style={{ color: SENTIMENT_INK.positive }}>P {data.positive}</span>
-        <span style={{ color: SENTIMENT_INK.negative }}>N {data.negative}</span>
-        <span style={{ color: SENTIMENT_INK.complaint }}>C {data.complaint}</span>
-        {data.suggestion > 0 && <span style={{ color: SENTIMENT_INK.suggestion }}>S {data.suggestion}</span>}
-      </div>
-    </div>
-  )
-}
-
 // ── Rating Bar ─────────────────────────────────────────────────────────────────
 function RatingBar({ rating, count, max }: { rating: number; count: number; max: number }) {
   const pct = max ? Math.round((count / max) * 100) : 0
   const colors = ['', '#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e']
+  const color = colors[rating] || '#2563eb'
   return (
     <div className="flex items-center gap-3 py-1.5">
-      <span className="text-xs font-black text-slate-500 w-8">{rating} star</span>
-      <div className="flex-1 bg-slate-100 rounded-full h-2.5">
-        <div className="h-2.5 rounded-full" style={{ width: `${pct}%`, background: colors[rating] }} />
+      <span className="text-xs font-black text-[var(--dash-muted)] w-14 flex items-center gap-1">
+        <span>{rating}</span>
+        <span className="text-amber-400 text-[11px]">★</span>
+        <span className="text-[10px] font-normal">star</span>
+      </span>
+      <div className="relative flex-1 bg-[var(--dash-border)]/50 rounded-full h-3 overflow-hidden shadow-inner p-[1px]">
+        <div className="relative h-full w-full rounded-full overflow-hidden bg-[var(--dash-inset)]">
+          <div
+            className="relative h-full rounded-full transition-all duration-300"
+            style={{
+              width: `${pct}%`,
+              background: `linear-gradient(90deg, ${color}, ${color}ee)`,
+              boxShadow: `0 1px 4px ${color}60`,
+            }}
+          >
+            {/* 3D Specular curved highlight */}
+            <div
+              className="absolute inset-x-0 top-0 h-[45%] pointer-events-none rounded-t-full"
+              style={{
+                background:
+                  'linear-gradient(to bottom, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.15) 80%, transparent 100%)',
+              }}
+            />
+          </div>
+        </div>
       </div>
-      <span className="text-xs font-black text-slate-700 w-6 text-right">{count}</span>
+      <span className="text-xs font-black text-[var(--dash-heading)] w-8 text-right">{count}</span>
+      <span className="text-[10px] font-semibold text-[var(--dash-muted)] w-8 text-right">{pct}%</span>
     </div>
   )
 }
@@ -404,72 +334,108 @@ function ShopCard({ shop, rank }: {
 }) {
   const scoreColor = !shop.satisfaction ? 'var(--dash-muted)'
     : shop.satisfaction >= 70 ? 'var(--dash-ink-positive)'
-    : shop.satisfaction >= 45 ? 'var(--dash-ink-rating)'
-    : 'var(--dash-ink-complaint)'
+      : shop.satisfaction >= 45 ? 'var(--dash-ink-rating)'
+        : 'var(--dash-ink-complaint)'
 
   return (
-    <div className={`${surfaceCls} rounded-2xl p-5`}>
+    <div
+      className={`${surfaceCls} relative rounded-2xl p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden`}
+      style={{
+        boxShadow:
+          '0 10px 25px -5px var(--dash-shadow), inset 0 1px 0 rgba(255,255,255,0.7)',
+      }}
+    >
+      {/* Top 3D highlight edge */}
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
+
       {/* Header */}
       <div className="flex items-start justify-between mb-4 gap-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="grid h-7 w-7 place-items-center rounded-full bg-slate-900 text-xs font-black text-white">#{rank}</span>
-            <span className="text-base font-black text-slate-950 break-words">{shop.name}</span>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span
+              className="grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-slate-800 to-slate-950 text-xs font-black text-white shadow-md border border-slate-700/50"
+              style={{ boxShadow: '0 2px 6px rgba(15,23,42,0.35)' }}
+            >
+              #{rank}
+            </span>
+            <span className="text-base font-black text-[var(--dash-heading)] break-words">{shop.name}</span>
           </div>
-          {shop.city && <p className="text-sm font-semibold text-slate-500 mt-1">{shop.city}</p>}
+          {shop.city && <p className="text-xs font-semibold text-[var(--dash-muted)] mt-1 ml-9">{shop.city}</p>}
         </div>
         <div className="text-right">
-          <div className="text-3xl font-black" style={{ color: scoreColor }}>
+          <div className="text-3xl font-black tracking-tight" style={{ color: scoreColor }}>
             {shop.satisfaction !== null ? `${shop.satisfaction}%` : '—'}
           </div>
-          <div className="text-xs font-bold uppercase tracking-widest text-slate-500">Satisfaction</div>
+          <div className="text-[10px] font-black uppercase tracking-widest text-[var(--dash-muted)]">Satisfaction</div>
         </div>
       </div>
 
       {/* Sentiment split */}
-      <div className="flex gap-2 mb-4">
+      <div className="grid grid-cols-4 gap-2 mb-4">
         {[
-          { label: 'Positive',   count: shop.positive,   color: SENTIMENT_COLOR.positive,   ink: SENTIMENT_INK.positive },
-          { label: 'Negative',   count: shop.negative,   color: SENTIMENT_COLOR.negative,   ink: SENTIMENT_INK.negative },
-          { label: 'Complaint',  count: shop.complaint,  color: SENTIMENT_COLOR.complaint,  ink: SENTIMENT_INK.complaint },
+          { label: 'Positive', count: shop.positive, color: SENTIMENT_COLOR.positive, ink: SENTIMENT_INK.positive },
+          { label: 'Negative', count: shop.negative, color: SENTIMENT_COLOR.negative, ink: SENTIMENT_INK.negative },
+          { label: 'Complaint', count: shop.complaint, color: SENTIMENT_COLOR.complaint, ink: SENTIMENT_INK.complaint },
           { label: 'Suggestion', count: shop.suggestion, color: SENTIMENT_COLOR.suggestion, ink: SENTIMENT_INK.suggestion },
         ].map((s) => (
-          <div key={s.label} className="flex-1 bg-slate-50 rounded-xl p-2.5 text-center border border-slate-100 min-w-0">
-            <div className="mx-auto mb-1 h-1.5 w-8 rounded-full" style={{ background: s.color }} />
-            <div className="text-xl font-black" style={{ color: s.ink }}>{s.count}</div>
-            <div className="text-[0.68rem] font-bold text-slate-500 truncate">{s.label}</div>
+          <div
+            key={s.label}
+            className="bg-[var(--dash-inset)] rounded-xl p-2.5 text-center border border-[var(--dash-border)] min-w-0 shadow-inner"
+          >
+            <div
+              className="mx-auto mb-1 h-1.5 w-6 rounded-full shadow-sm"
+              style={{ background: s.color, boxShadow: `0 0 5px ${s.color}80` }}
+            />
+            <div className="text-lg font-black" style={{ color: s.ink }}>{s.count}</div>
+            <div className="text-[0.62rem] font-bold text-[var(--dash-muted)] uppercase tracking-wider truncate">{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Avg rating */}
-      <div className="flex items-center justify-between mb-3 text-sm">
-        <span className="text-slate-500">Avg rating</span>
-        <span className="font-bold" style={{ color: 'var(--dash-ink-rating)' }}>
+      <div className="flex items-center justify-between mb-3 text-xs font-bold border-t border-[var(--dash-border)] pt-3">
+        <span className="text-[var(--dash-muted)]">Average Rating</span>
+        <span className="font-black text-sm" style={{ color: 'var(--dash-ink-rating)' }}>
           {shop.avgRating !== null ? `${shop.avgRating} / 5` : '—'}
         </span>
       </div>
 
-      {/* Category breakdown */}
-      <div className="space-y-1.5">
+      {/* Category breakdown with 3D capsule progress bars */}
+      <div className="space-y-2">
         {Object.entries(shop.categoryBreakdown)
           .sort((a, b) => b[1].total - a[1].total)
-          .map(([cat, d]) => (
-            <div key={cat} className="flex items-center gap-2 text-xs">
-              <span>{CATEGORY_EMOJI[cat] ?? '📌'}</span>
-              <span className="text-slate-600 capitalize w-20 min-w-0 break-words">{cat}</span>
-              <div className="flex-1 bg-slate-100 rounded-full h-1.5">
-                <div
-                  className="h-1.5 rounded-full"
-                  style={{
-                    width: `${(d.total / shop.total) * 100}%`,
-                    background: d.complaint > 0 ? '#ef4444' : d.negative > 0 ? '#f97316' : '#22c55e',
-                  }}
-                />
+          .map(([cat, d]) => {
+            const barColor = d.complaint > 0 ? '#ef4444' : d.negative > 0 ? '#f97316' : '#22c55e'
+            const pct = shop.total ? (d.total / shop.total) * 100 : 0
+            return (
+              <div key={cat} className="flex items-center gap-2 text-xs">
+                <span>{CATEGORY_EMOJI[cat] ?? '📌'}</span>
+                <span className="text-[var(--dash-text)] font-semibold capitalize w-20 min-w-0 break-words truncate">{cat}</span>
+                <div className="relative flex-1 bg-[var(--dash-border)]/40 rounded-full h-2 overflow-hidden shadow-inner p-[1px]">
+                  <div className="relative h-full w-full rounded-full overflow-hidden bg-[var(--dash-inset)]">
+                    <div
+                      className="relative h-full rounded-full transition-all duration-300"
+                      style={{
+                        width: `${pct}%`,
+                        background: `linear-gradient(90deg, ${barColor}, ${barColor}ee)`,
+                        boxShadow: `0 1px 3px ${barColor}60`,
+                      }}
+                    >
+                      {/* Specular gloss highlight */}
+                      <div
+                        className="absolute inset-x-0 top-0 h-[50%] pointer-events-none rounded-t-full"
+                        style={{
+                          background:
+                            'linear-gradient(to bottom, rgba(255,255,255,0.6) 0%, transparent 100%)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <span className="text-[var(--dash-muted)] font-black w-6 text-right">{d.total}</span>
               </div>
-              <span className="text-slate-500 w-4 text-right">{d.total}</span>
-            </div>
-          ))}
+            )
+          })}
       </div>
     </div>
   )
@@ -477,16 +443,16 @@ function ShopCard({ shop, rank }: {
 
 // ── Status badge + cycle button ────────────────────────────────────────────────
 const STATUS_META: Record<string, { label: string; color: string; next: string; nextLabel: string }> = {
-  pending:   { label: 'Pending',   color: '#c2410c', next: 'contacted', nextLabel: 'Mark Contacted' },
-  contacted: { label: 'Contacted', color: '#2563eb', next: 'resolved',  nextLabel: 'Mark Resolved'  },
-  resolved:  { label: 'Resolved',  color: '#15803d', next: 'pending',   nextLabel: 'Reopen'         },
+  pending: { label: 'Pending', color: '#c2410c', next: 'contacted', nextLabel: 'Mark Contacted' },
+  contacted: { label: 'Contacted', color: '#2563eb', next: 'resolved', nextLabel: 'Mark Resolved' },
+  resolved: { label: 'Resolved', color: '#15803d', next: 'pending', nextLabel: 'Reopen' },
 }
 
 function StatusBadge({ status }: { status: string }) {
   const meta = STATUS_META[status] ?? STATUS_META['pending']
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold text-white"
-          style={{ background: meta.color }}>
+      style={{ background: meta.color }}>
       {meta.label}
     </span>
   )
@@ -509,10 +475,10 @@ function TicketBadge({ ticketId, priority }: { ticketId: string | null; priority
 
 // ── Numeric phone pad ──────────────────────────────────────────────────────────
 const PAD_KEYS = [
-  ['1','2','3'],
-  ['4','5','6'],
-  ['7','8','9'],
-  ['+','0','⌫'],
+  ['1', '2', '3'],
+  ['4', '5', '6'],
+  ['7', '8', '9'],
+  ['+', '0', '⌫'],
 ]
 
 function PhonePad({ value, onChange }: { value: string; onChange: (v: string) => void }) {
@@ -542,11 +508,10 @@ function PhonePad({ value, onChange }: { value: string; onChange: (v: string) =>
           <button
             key={k}
             onClick={() => press(k)}
-            className={`py-3 rounded-xl text-base font-semibold transition-colors ${
-              k === '⌫'
+            className={`py-3 rounded-xl text-base font-semibold transition-colors ${k === '⌫'
                 ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
                 : 'bg-white border border-slate-200 text-slate-800 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 active:scale-95'
-            }`}
+              }`}
           >
             {k}
           </button>
@@ -566,21 +531,21 @@ function EditContactPanel({
   onSaved: (lead: { name: string | null; phone: string | null; email: string | null }) => void
   onCancel: () => void
 }) {
-  const [name,   setName]   = useState(fmtContact(review.leadName)  ?? '')
-  const [phone,  setPhone]  = useState(review.leadPhone ?? '')
-  const [email,  setEmail]  = useState(fmtContact(review.leadEmail) ?? '')
+  const [name, setName] = useState(fmtContact(review.leadName) ?? '')
+  const [phone, setPhone] = useState(review.leadPhone ?? '')
+  const [email, setEmail] = useState(fmtContact(review.leadEmail) ?? '')
   const [saving, setSaving] = useState(false)
-  const [err,    setErr]    = useState<string | null>(null)
-  const [ok,     setOk]     = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const [ok, setOk] = useState(false)
 
   async function save() {
     if (!review.leadId) { setErr('No contact record to update'); return }
     setSaving(true); setErr(null)
     try {
       const res = await fetch(`/api/leads/${review.leadId}`, {
-        method:  'PATCH',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ name, phone, email }),
+        body: JSON.stringify({ name, phone, email }),
       })
       if (!res.ok) { setErr('Save failed'); return }
       const data = await res.json()
@@ -644,16 +609,16 @@ function TranscriptModal({
   review: ReviewRow
   onClose: () => void
   onStatusChange: (id: string, status: string) => void
-  onLeadChange:   (id: string, lead: { name: string | null; phone: string | null; email: string | null }) => void
+  onLeadChange: (id: string, lead: { name: string | null; phone: string | null; email: string | null }) => void
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   useModalA11y(panelRef, true, onClose)
-  const [status,    setStatus]    = useState(review.status)
-  const [saving,    setSaving]    = useState(false)
-  const [saveErr,   setSaveErr]   = useState<string | null>(null)
-  const [editLead,  setEditLead]  = useState(false)
-  const [lead,      setLead]      = useState({
-    name:  review.leadName,
+  const [status, setStatus] = useState(review.status)
+  const [saving, setSaving] = useState(false)
+  const [saveErr, setSaveErr] = useState<string | null>(null)
+  const [editLead, setEditLead] = useState(false)
+  const [lead, setLead] = useState({
+    name: review.leadName,
     phone: review.leadPhone,
     email: review.leadEmail,
   })
@@ -663,9 +628,9 @@ function TranscriptModal({
     setSaving(true); setSaveErr(null)
     try {
       const res = await fetch(`/api/reviews/${review.id}`, {
-        method:  'PATCH',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ status: next }),
+        body: JSON.stringify({ status: next }),
       })
       if (res.ok) {
         setStatus(next)
@@ -695,12 +660,12 @@ function TranscriptModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4"
-         onClick={onClose}>
+      onClick={onClose}>
       <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" />
 
       <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="transcript-modal-title" tabIndex={-1}
-           className="relative z-10 w-full max-w-2xl max-h-[90dvh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden"
-           onClick={(e) => e.stopPropagation()}>
+        className="relative z-10 w-full max-w-2xl max-h-[90dvh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
         <div className="flex items-start justify-between gap-3 p-5 border-b border-slate-200 shrink-0">
@@ -754,32 +719,32 @@ function TranscriptModal({
                   onCancel={() => setEditLead(false)}
                 />
               ) : (() => {
-                const dName  = fmtContact(lead.name)
+                const dName = fmtContact(lead.name)
                 const dPhone = fmtContact(lead.phone)
                 const dEmail = fmtContact(lead.email)
                 return (dName || dPhone || dEmail) ? (
-                <div className="space-y-2">
-                  {dName  && <p className="text-sm text-slate-800">👤 {dName}</p>}
-                  {dPhone && (
-                    <p className="text-sm text-slate-800 flex items-center gap-2">
-                      📞 <button onClick={() => navigator.clipboard.writeText(dPhone)}
-                        className="text-blue-600 hover:underline font-mono" title="Tap to copy">
-                        {dPhone}
-                      </button>
-                    </p>
-                  )}
-                  {dEmail && (
-                    <p className="text-sm text-slate-800 flex items-center gap-2 break-words">
-                      ✉️ <button onClick={() => navigator.clipboard.writeText(dEmail!)}
-                        className="text-blue-600 hover:underline break-all" title="Tap to copy">
-                        {dEmail}
-                      </button>
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-xs text-[var(--dash-muted)] italic">No contact details provided</p>
-              )
+                  <div className="space-y-2">
+                    {dName && <p className="text-sm text-slate-800">👤 {dName}</p>}
+                    {dPhone && (
+                      <p className="text-sm text-slate-800 flex items-center gap-2">
+                        📞 <button onClick={() => navigator.clipboard.writeText(dPhone)}
+                          className="text-blue-600 hover:underline font-mono" title="Tap to copy">
+                          {dPhone}
+                        </button>
+                      </p>
+                    )}
+                    {dEmail && (
+                      <p className="text-sm text-slate-800 flex items-center gap-2 break-words">
+                        ✉️ <button onClick={() => navigator.clipboard.writeText(dEmail!)}
+                          className="text-blue-600 hover:underline break-all" title="Tap to copy">
+                          {dEmail}
+                        </button>
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[var(--dash-muted)] italic">No contact details provided</p>
+                )
               })()}
             </div>
 
@@ -852,11 +817,10 @@ function TranscriptModal({
               <div className="space-y-2">
                 {messages.map((m, i) => (
                   <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                      m.role === 'user'
+                    <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${m.role === 'user'
                         ? 'bg-blue-600 text-white rounded-br-md'
                         : 'bg-slate-100 text-slate-800 rounded-bl-md border border-slate-200'
-                    }`}>
+                      }`}>
                       {m.content}
                     </div>
                   </div>
@@ -872,34 +836,34 @@ function TranscriptModal({
 
 // ── Filter helpers ─────────────────────────────────────────────────────────────
 const DATE_RANGES = [
-  { label: 'Today',    days: 0 },
-  { label: '7 days',  days: 7 },
+  { label: 'Today', days: 0 },
+  { label: '7 days', days: 7 },
   { label: '30 days', days: 30 },
-  { label: '3 months',days: 90 },
-  { label: 'All time',days: -1 },
+  { label: '3 months', days: 90 },
+  { label: 'All time', days: -1 },
 ] as const
 
-const CATEGORIES  = ['all','product','service','behavioral','facility','pricing','general'] as const
-const SENTIMENTS  = ['all','complaint','negative','positive','suggestion'] as const
-const STATUSES    = ['all','pending','contacted','resolved'] as const
+const CATEGORIES = ['all', 'product', 'service', 'behavioral', 'facility', 'pricing', 'general'] as const
+const SENTIMENTS = ['all', 'complaint', 'negative', 'positive', 'suggestion'] as const
+const STATUSES = ['all', 'pending', 'contacted', 'resolved'] as const
 const SORT_OPTIONS = [
-  { label: 'Newest first',  fn: (a: ReviewRow, b: ReviewRow) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() },
-  { label: 'Oldest first',  fn: (a: ReviewRow, b: ReviewRow) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() },
-  { label: 'Rating ↑',      fn: (a: ReviewRow, b: ReviewRow) => (a.rating ?? 0) - (b.rating ?? 0) },
-  { label: 'Rating ↓',      fn: (a: ReviewRow, b: ReviewRow) => (b.rating ?? 0) - (a.rating ?? 0) },
+  { label: 'Newest first', fn: (a: ReviewRow, b: ReviewRow) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() },
+  { label: 'Oldest first', fn: (a: ReviewRow, b: ReviewRow) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() },
+  { label: 'Rating ↑', fn: (a: ReviewRow, b: ReviewRow) => (a.rating ?? 0) - (b.rating ?? 0) },
+  { label: 'Rating ↓', fn: (a: ReviewRow, b: ReviewRow) => (b.rating ?? 0) - (a.rating ?? 0) },
 ] as const
 
 type SortKey = 0 | 1 | 2 | 3
 
 interface ReviewFilters {
-  search:    string
+  search: string
   dateRange: number   // days back, -1 = all
-  shop:      string   // shop name or 'all'
-  category:  string
+  shop: string   // shop name or 'all'
+  category: string
   sentiment: string
-  status:    string
-  rating:    number   // 0 = all
-  sort:      SortKey
+  status: string
+  rating: number   // 0 = all
+  sort: SortKey
 }
 
 const DEFAULT_FILTERS: ReviewFilters = {
@@ -930,11 +894,11 @@ function applyFilters(reviews: ReviewRow[], f: ReviewFilters): ReviewRow[] {
   return reviews
     .filter((r) => {
       if (f.dateRange >= 0 && new Date(r.createdAt).getTime() < cutoff) return false
-      if (f.shop !== 'all'      && r.shopName  !== f.shop)      return false
-      if (f.category !== 'all'  && r.category  !== f.category)  return false
-      if (f.sentiment !== 'all' && r.sentiment !== f.sentiment)  return false
-      if (f.status !== 'all'    && r.status    !== f.status)     return false
-      if (f.rating !== 0        && r.rating    !== f.rating)     return false
+      if (f.shop !== 'all' && r.shopName !== f.shop) return false
+      if (f.category !== 'all' && r.category !== f.category) return false
+      if (f.sentiment !== 'all' && r.sentiment !== f.sentiment) return false
+      if (f.status !== 'all' && r.status !== f.status) return false
+      if (f.rating !== 0 && r.rating !== f.rating) return false
       if (q) {
         const hay = [r.summary, r.subcategory, r.shopName, r.leadName, r.leadPhone, r.category]
           .filter(Boolean).join(' ').toLowerCase()
@@ -949,11 +913,10 @@ function applyFilters(reviews: ReviewRow[], f: ReviewFilters): ReviewRow[] {
 function Pill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick}
-      className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors border whitespace-nowrap ${
-        active
+      className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors border whitespace-nowrap ${active
           ? 'bg-slate-900 text-white border-slate-900'
           : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
-      }`}>
+        }`}>
       {label}
     </button>
   )
@@ -961,10 +924,10 @@ function Pill({ label, active, onClick }: { label: string; active: boolean; onCl
 
 // ── Reviews Panel ─────────────────────────────────────────────────────────────
 function ReviewsPanel({ reviews: initial }: { reviews: DashboardData['recentReviews'] }) {
-  const [reviews,   setReviews]   = useState(initial)
-  const [filters,   setFilters]   = useState<ReviewFilters>(DEFAULT_FILTERS)
-  const [open,      setOpen]      = useState(false)   // filter panel expanded
-  const [selected,  setSelected]  = useState<ReviewRow | null>(null)
+  const [reviews, setReviews] = useState(initial)
+  const [filters, setFilters] = useState<ReviewFilters>(DEFAULT_FILTERS)
+  const [open, setOpen] = useState(false)   // filter panel expanded
+  const [selected, setSelected] = useState<ReviewRow | null>(null)
 
   const set = useCallback(<K extends keyof ReviewFilters>(key: K, val: ReviewFilters[K]) =>
     setFilters((prev) => ({ ...prev, [key]: val })), [])
@@ -985,8 +948,8 @@ function ReviewsPanel({ reviews: initial }: { reviews: DashboardData['recentRevi
       : prev)
   }, [])
 
-  const shops       = useMemo(() => ['all', ...[...new Set(reviews.map((r) => r.shopName))].sort()], [reviews])
-  const filtered    = useMemo(() => applyFilters(reviews, filters), [reviews, filters])
+  const shops = useMemo(() => ['all', ...[...new Set(reviews.map((r) => r.shopName))].sort()], [reviews])
+  const filtered = useMemo(() => applyFilters(reviews, filters), [reviews, filters])
   const activeCount = countActive(filters)
   const pendingCount = reviews.filter((r) => r.sentiment !== 'positive' && r.status === 'pending').length
 
@@ -1028,11 +991,10 @@ function ReviewsPanel({ reviews: initial }: { reviews: DashboardData['recentRevi
 
           {/* Filter toggle */}
           <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold border transition-colors ${
-              open || activeCount > 0
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold border transition-colors ${open || activeCount > 0
                 ? 'bg-blue-600 text-white border-blue-600'
                 : 'bg-white text-slate-700 border-slate-300 hover:border-blue-400'
-            }`}>
+              }`}>
             <span>⚙ Filters</span>
             {activeCount > 0 && (
               <span className="bg-white text-blue-600 text-xs font-black rounded-full w-5 h-5 flex items-center justify-center">
@@ -1128,7 +1090,7 @@ function ReviewsPanel({ reviews: initial }: { reviews: DashboardData['recentRevi
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">⭐ Rating</p>
                 <div className="flex flex-wrap gap-1.5">
                   <Pill label="All" active={filters.rating === 0} onClick={() => set('rating', 0)} />
-                  {[1,2,3,4,5].map((r) => (
+                  {[1, 2, 3, 4, 5].map((r) => (
                     <Pill key={r} active={filters.rating === r}
                       label={`${RATING_EMOJI[r]} ${r}★`}
                       onClick={() => set('rating', r)} />
@@ -1218,10 +1180,10 @@ const EXAMPLE_QUERIES = [
 ]
 
 function SearchPanel() {
-  const [query, setQuery]   = useState('')
-  const [loading, setLoad]  = useState(false)
+  const [query, setQuery] = useState('')
+  const [loading, setLoad] = useState(false)
   const [result, setResult] = useState<SearchResult | null>(null)
-  const [error, setError]   = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   async function search(q: string) {
@@ -1230,7 +1192,7 @@ function SearchPanel() {
     setQuery(clean)
     setLoad(true); setResult(null); setError(null)
     try {
-      const res  = await fetch('/api/dashboard/search', {
+      const res = await fetch('/api/dashboard/search', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: clean, limit: 6 }),
       })
@@ -1360,6 +1322,7 @@ export function DashboardClient({ data, session, initialTheme }: {
 }) {
   const router = useRouter()
   const [tab, setTab] = useState<'analytics' | 'reviews' | 'shops' | 'reports'>('analytics')
+  const [trendView, setTrendView] = useState<'3d' | 'line'>('3d')
   const [themeKey, setThemeKey] = useState<DashboardThemeKey>(initialTheme ?? 'light')
   // Data is fetched on the server per request, so "as of" is when this page loaded.
   const [loadedAt, setLoadedAt] = useState<string | null>(null)
@@ -1384,23 +1347,22 @@ export function DashboardClient({ data, session, initialTheme }: {
 
   const { totalReviews, avgRating, bysentiment, categorySentiment, trend, ratingDist, topIssues, topSuggestions, recentReviews, shops } = data
 
-  const positive   = bysentiment['positive']   ?? 0
-  const negative   = bysentiment['negative']   ?? 0
-  const complaint  = bysentiment['complaint']  ?? 0
+  const positive = bysentiment['positive'] ?? 0
+  const negative = bysentiment['negative'] ?? 0
+  const complaint = bysentiment['complaint'] ?? 0
   const suggestion = bysentiment['suggestion'] ?? 0
   const satisfaction = avgRating ? Math.round((avgRating / 5) * 100) : null
 
-  const sentimentPie = [
-    { name: '✅ Positive',   value: positive,   color: '#22c55e' },
-    { name: '⚠️ Negative',   value: negative,   color: '#f97316' },
-    { name: '🚨 Complaint',  value: complaint,  color: '#ef4444' },
-    { name: '💡 Suggestion', value: suggestion, color: '#6366f1' },
-  ].filter((s) => s.value > 0)
-
-  const trendData    = trend.map((t) => ({ month: t.month.slice(5), count: Number(t.count) }))
-  const maxRating    = Math.max(...ratingDist.map((r) => r.count), 1)
-  const rankedShops  = [...shops].sort((a, b) => (b.satisfaction ?? 0) - (a.satisfaction ?? 0))
-  const maxCatTotal  = Math.max(...Object.values(categorySentiment).map((c) => c.total), 1)
+  const trendData = trend.map((t) => ({ month: t.month.slice(5), count: Number(t.count) }))
+  const busiestMonth = trendData.length > 0
+    ? [...trendData].sort((a, b) => b.count - a.count)[0]
+    : null
+  const avgMonthlyCount = trendData.length > 0
+    ? Math.round(trendData.reduce((acc, d) => acc + d.count, 0) / trendData.length)
+    : 0
+  const maxRating = Math.max(...ratingDist.map((r) => r.count), 1)
+  const rankedShops = [...shops].sort((a, b) => (b.satisfaction ?? 0) - (a.satisfaction ?? 0))
+  const maxCatTotal = Math.max(...Object.values(categorySentiment).map((c) => c.total), 1)
   const pendingFollowUps = recentReviews.filter((r) => r.sentiment !== 'positive' && r.status === 'pending').length
   const complaintRate = totalReviews ? Math.round((complaint / totalReviews) * 100) : 0
   const positiveRate = totalReviews ? Math.round((positive / totalReviews) * 100) : 0
@@ -1413,11 +1375,10 @@ export function DashboardClient({ data, session, initialTheme }: {
     : satisfaction >= 70 ? '#22c55e' : satisfaction >= 45 ? '#eab308' : '#ef4444'
   const theme = DASHBOARD_THEMES[themeKey] ?? DASHBOARD_THEMES.light
 
-  const tabBtn = (active: boolean) => `shrink-0 whitespace-nowrap px-4 py-2.5 rounded-xl text-sm font-black transition-colors border ${
-    active
+  const tabBtn = (active: boolean) => `shrink-0 whitespace-nowrap px-4 py-2.5 rounded-xl text-sm font-black transition-colors border ${active
       ? 'text-white border-transparent shadow-sm'
       : `bg-[var(--dash-input)] text-[var(--dash-text)] border-[var(--dash-border)] ${theme.tabHover}`
-  }`
+    }`
 
   return (
     <div
@@ -1427,686 +1388,817 @@ export function DashboardClient({ data, session, initialTheme }: {
     >
       <div className="mx-auto w-full max-w-[1720px] px-4 py-5 sm:px-6 lg:px-8">
 
-      {/* ── Header ────────────────────────────────────────────────────────── */}
-      <div className={`${surfaceCls} mb-5 overflow-hidden rounded-2xl`} style={{ borderTop: `3px solid ${theme.accent}` }}>
-        <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[1fr_auto] lg:p-6">
-          <div className="min-w-0">
-            <h1 className="max-w-4xl text-2xl font-black leading-tight text-[var(--dash-heading)] sm:text-3xl lg:text-4xl">
-              Outlet performance and review analytics
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-[var(--dash-muted)]">
-              Monitor complaint risk, satisfaction quality, and follow-up work across every shop.
-            </p>
-          </div>
-
-          <div className="grid min-w-[min(100%,23rem)] grid-cols-3 gap-2">
-            <div className={`rounded-xl border p-3 ${theme.statPanel}`}>
-              <p className="text-[0.68rem] font-black uppercase tracking-widest">Reviews</p>
-              <p className="mt-1.5 text-xl font-black">{totalReviews}</p>
+        {/* ── Header ────────────────────────────────────────────────────────── */}
+        <div className={`${surfaceCls} mb-5 overflow-hidden rounded-2xl`} style={{ borderTop: `3px solid ${theme.accent}` }}>
+          <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[1fr_auto] lg:p-6">
+            <div className="min-w-0">
+              <h1 className="max-w-4xl text-2xl font-black leading-tight text-[var(--dash-heading)] sm:text-3xl lg:text-4xl">
+                Outlet performance and review analytics
+              </h1>
+              <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-[var(--dash-muted)]">
+                Monitor complaint risk, satisfaction quality, and follow-up work across every shop.
+              </p>
             </div>
-            <div className={`rounded-xl border p-3 ${theme.positivePanel}`}>
-              <p className="text-[0.68rem] font-black uppercase tracking-widest">Positive</p>
-              <p className="mt-1.5 text-xl font-black">{positiveRate}%</p>
-            </div>
-            <div className={`rounded-xl border p-3 ${theme.queuePanel}`}>
-              <p className="text-[0.68rem] font-black uppercase tracking-widest">Queue</p>
-              <p className="mt-1.5 text-xl font-black">{pendingFollowUps}</p>
-            </div>
-          </div>
-        </div>
 
-        <div className="flex flex-col gap-3 border-t border-[var(--dash-border)] bg-[var(--dash-inset)] px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
-          <nav className="flex shrink-0 flex-wrap gap-2 lg:flex-nowrap" aria-label="Dashboard sections">
-            <button type="button" aria-current={tab === 'analytics' ? 'page' : undefined} onClick={() => setTab('analytics')} className={tabBtn(tab === 'analytics')} style={tab === 'analytics' ? { background: theme.accentDark } : undefined}>
-              Analytics
-            </button>
-            <button type="button" aria-current={tab === 'reviews' ? 'page' : undefined} onClick={() => setTab('reviews')} className={tabBtn(tab === 'reviews')} style={tab === 'reviews' ? { background: theme.accentDark } : undefined}>
-              Reviews
-              {pendingFollowUps > 0 && (
-                <span className="ml-2 rounded-full bg-orange-700 px-2 py-0.5 text-xs font-black text-white">
-                  {pendingFollowUps}
-                </span>
-              )}
-            </button>
-            <button type="button" aria-current={tab === 'shops' ? 'page' : undefined} onClick={() => setTab('shops')} className={tabBtn(tab === 'shops')} style={tab === 'shops' ? { background: theme.accentDark } : undefined}>
-              Shops
-            </button>
-            <button type="button" aria-current={tab === 'reports' ? 'page' : undefined} onClick={() => setTab('reports')} className={tabBtn(tab === 'reports')} style={tab === 'reports' ? { background: theme.accentDark } : undefined}>
-              Reports
-            </button>
-          </nav>
-
-          <div className="flex flex-wrap items-center gap-2.5 lg:justify-end">
-            <ThemeSelector selected={themeKey} onSelect={selectTheme} />
-            <div className="flex flex-wrap items-center gap-2.5 text-xs font-bold text-[var(--dash-muted)]">
-              {loadedAt && <span>Data as of {loadedAt}</span>}
-            </div>
-            <button
-              onClick={() => router.refresh()}
-              className="w-fit rounded-full border border-[var(--dash-border)] bg-[var(--dash-input)] px-3 py-1.5 text-xs font-black text-[var(--dash-muted)] transition-colors hover:border-blue-300 hover:text-blue-500"
-            >
-              ↻ Refresh
-            </button>
-            <button
-              onClick={async () => {
-                await fetch('/api/dashboard/auth', { method: 'DELETE' })
-                router.push('/dashboard/login')
-              }}
-              className="w-fit rounded-full border border-[var(--dash-border)] bg-[var(--dash-input)] px-3 py-1.5 text-xs font-black text-[var(--dash-muted)] transition-colors hover:border-red-300 hover:text-red-500"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Tab content ───────────────────────────────────────────────────── */}
-      {tab === 'analytics' && (
-        <>
-          {/* ── AI Search ───────────────────────────────────────────────── */}
-          <SearchPanel />
-
-          {/* ── Executive KPIs ──────────────────────────────────────────── */}
-          <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
-            <h2 className="text-xl font-black text-[var(--dash-heading)]">Business health</h2>
-            <p className="max-w-2xl text-xs font-semibold leading-5 text-[var(--dash-muted)]">
-              Volume, customer sentiment and follow-up risk at a glance.
-            </p>
-          </div>
-          <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-7">
-            <KpiCard label="Total"       value={totalReviews} color={theme.accent} highlight />
-            <KpiCard label="Positive"     value={positive}
-              sub={`${totalReviews ? Math.round(positive / totalReviews * 100) : 0}%`}
-              color="#22c55e" />
-            <KpiCard label="Negative"    value={negative}
-              sub={`${totalReviews ? Math.round(negative / totalReviews * 100) : 0}%`}
-              color="#f97316" />
-            <KpiCard label="Complaints"  value={complaint}
-              sub={`${totalReviews ? Math.round(complaint / totalReviews * 100) : 0}%`}
-              color="#ef4444" />
-            <KpiCard label="Suggestions" value={suggestion}
-              sub={`${totalReviews ? Math.round(suggestion / totalReviews * 100) : 0}%`}
-              color={theme.accent} />
-            <KpiCard label="Avg Rating"
-              value={avgRating !== null ? `${avgRating}/5` : '—'}
-              color="#eab308" />
-            <KpiCard label="Satisfaction"
-              value={satisfaction !== null ? `${satisfaction}%` : '—'}
-              color={satisfactionColor} />
-          </div>
-
-          <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <InsightCard
-              label="Complaint Rate"
-              value={`${complaintRate}%`}
-              detail={complaintRate >= 20 ? 'Needs active management' : 'Within current tolerance'}
-              tone={complaintRate >= 20 ? 'red' : 'green'}
-            />
-            <InsightCard
-              label="Follow-up Queue"
-              value={pendingFollowUps}
-              detail={pendingFollowUps === 0 ? 'No open recovery work' : 'Open customer recovery items'}
-              tone={pendingFollowUps > 0 ? 'amber' : 'green'}
-            />
-            <InsightCard
-              label="Strongest Outlet"
-              value={bestShop?.name ?? '—'}
-              detail={bestShop?.satisfaction !== null && bestShop?.satisfaction !== undefined ? `${bestShop.satisfaction}% satisfaction` : 'No rated outlet yet'}
-              tone="blue"
-            />
-            <InsightCard
-              label="Lowest Rated"
-              value={lowestShop?.name ?? '—'}
-              detail={lowestShop?.satisfaction !== null && lowestShop?.satisfaction !== undefined ? `${lowestShop.satisfaction}% satisfaction` : 'No rated outlet yet'}
-              tone={lowestShop && (lowestShop.satisfaction ?? 100) < 60 ? 'red' : 'slate'}
-            />
-          </div>
-
-          <Divider />
-
-          {/* ── Sentiment + Category ────────────────────────────────────── */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
-
-            {/* Sentiment Analysis */}
-            <Card>
-              <SectionTitle>Sentiment Breakdown</SectionTitle>
-              <div className="flex flex-col md:flex-row gap-4 items-center">
-                <ResponsiveContainer width="100%" height={220} minWidth={180}>
-                  <PieChart>
-                    <Pie data={sentimentPie} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" stroke="none">
-                      {sentimentPie.map((s) => <Cell key={s.name} fill={s.color} />)}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ background: 'var(--dash-surface)', border: '1px solid var(--dash-border)', color: 'var(--dash-text)', borderRadius: 8, fontSize: 12 }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="flex-1">
-                  {['positive', 'negative', 'complaint', 'suggestion'].map((s) => (
-                    <SentimentRow key={s} sentiment={s} count={bysentiment[s] ?? 0} total={totalReviews} />
-                  ))}
-                </div>
+            <div className="grid min-w-[min(100%,23rem)] grid-cols-3 gap-2">
+              <div className={`rounded-xl border p-3 ${theme.statPanel}`}>
+                <p className="text-[0.68rem] font-black uppercase tracking-widest">Reviews</p>
+                <p className="mt-1.5 text-xl font-black">{totalReviews}</p>
               </div>
-            </Card>
-
-            {/* Category Analysis */}
-            <Card>
-              <SectionTitle>Category Breakdown</SectionTitle>
-              <div>
-                {Object.entries(categorySentiment)
-                  .sort((a, b) => b[1].total - a[1].total)
-                  .map(([cat, d]) => (
-                    <CategoryRow key={cat} name={cat} data={d} maxTotal={maxCatTotal} />
-                  ))}
+              <div className={`rounded-xl border p-3 ${theme.positivePanel}`}>
+                <p className="text-[0.68rem] font-black uppercase tracking-widest">Positive</p>
+                <p className="mt-1.5 text-xl font-black">{positiveRate}%</p>
               </div>
-              <div className="flex gap-3 mt-3 text-xs text-slate-500 flex-wrap">
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[#22c55e] inline-block"/>Positive</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[#f97316] inline-block"/>Negative</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[#ef4444] inline-block"/>Complaint</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[#6366f1] inline-block"/>Suggestion</span>
+              <div className={`rounded-xl border p-3 ${theme.queuePanel}`}>
+                <p className="text-[0.68rem] font-black uppercase tracking-widest">Queue</p>
+                <p className="mt-1.5 text-xl font-black">{pendingFollowUps}</p>
               </div>
-            </Card>
+            </div>
           </div>
 
-          {/* ── Shop Performance ────────────────────────────────────────── */}
-          <SectionTitle>Outlet Performance</SectionTitle>
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
-            {rankedShops.map((shop, i) => <ShopCard key={shop.id} shop={shop} rank={i + 1} />)}
-          </div>
-
-          <Divider />
-
-          {/* ── Top Issues + Top Suggestions ────────────────────────────── */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
-
-            {/* Top Issues */}
-            <Card>
-              <SectionTitle>Top Issues Requiring Attention</SectionTitle>
-              {topIssues.length === 0
-                ? <p className="text-slate-500 text-sm">No critical issues found.</p>
-                : (
-                  <div className="space-y-2">
-                    {topIssues.map((issue, i) => (
-                      <div key={i} className={`flex items-center gap-3 p-2.5 ${insetCls} rounded-lg`}>
-                        <Dot color={issue.sentiment === 'complaint' ? '#ef4444' : '#f97316'} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-slate-800 capitalize break-words">{issue.subcategory}</p>
-                          <p className="text-xs text-slate-500 capitalize">{issue.category}</p>
-                        </div>
-                        <span className="text-sm font-bold shrink-0"
-                              style={{ color: issue.sentiment === 'complaint' ? SENTIMENT_INK.complaint : SENTIMENT_INK.negative }}>
-                          {issue.count}×
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+          <div className="flex flex-col gap-3 border-t border-[var(--dash-border)] bg-[var(--dash-inset)] px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+            <nav className="flex shrink-0 flex-wrap gap-2 lg:flex-nowrap" aria-label="Dashboard sections">
+              <button type="button" aria-current={tab === 'analytics' ? 'page' : undefined} onClick={() => setTab('analytics')} className={tabBtn(tab === 'analytics')} style={tab === 'analytics' ? { background: theme.accentDark } : undefined}>
+                Analytics
+              </button>
+              <button type="button" aria-current={tab === 'reviews' ? 'page' : undefined} onClick={() => setTab('reviews')} className={tabBtn(tab === 'reviews')} style={tab === 'reviews' ? { background: theme.accentDark } : undefined}>
+                Reviews
+                {pendingFollowUps > 0 && (
+                  <span className="ml-2 rounded-full bg-orange-700 px-2 py-0.5 text-xs font-black text-white">
+                    {pendingFollowUps}
+                  </span>
                 )}
-            </Card>
+              </button>
+              <button type="button" aria-current={tab === 'shops' ? 'page' : undefined} onClick={() => setTab('shops')} className={tabBtn(tab === 'shops')} style={tab === 'shops' ? { background: theme.accentDark } : undefined}>
+                Shops
+              </button>
+              <button type="button" aria-current={tab === 'reports' ? 'page' : undefined} onClick={() => setTab('reports')} className={tabBtn(tab === 'reports')} style={tab === 'reports' ? { background: theme.accentDark } : undefined}>
+                Reports
+              </button>
+            </nav>
 
-            {/* Top Suggestions */}
-            <Card>
-              <SectionTitle>Top Customer Suggestions</SectionTitle>
-              {topSuggestions.length === 0
-                ? <p className="text-slate-500 text-sm">No suggestions recorded yet</p>
-                : (
-                  <div className="space-y-2">
-                    {topSuggestions.map((s, i) => (
-                      <div key={i} className={`flex items-center gap-3 p-2.5 ${insetCls} rounded-lg`}>
-                        <Dot color="#6366f1" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-slate-800 capitalize break-words">{s.subcategory}</p>
-                          <p className="text-xs text-slate-500 capitalize">{s.category}</p>
-                        </div>
-                        <span className="text-sm font-bold shrink-0" style={{ color: SENTIMENT_INK.suggestion }}>{s.count}×</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-            </Card>
-          </div>
-
-          {/* ── Trend + Rating Distribution ─────────────────────────────── */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
-
-            {/* Monthly Trend */}
-            <Card>
-              <SectionTitle>Monthly Review Trend</SectionTitle>
-              <ResponsiveContainer width="100%" height={260}>
-                <LineChart data={trendData} margin={{ left: 0, right: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
-                  <XAxis dataKey="month" tick={{ fill: CHART_TICK, fontSize: 11 }} />
-                  <YAxis tick={{ fill: CHART_TICK, fontSize: 11 }} />
-                  <Tooltip contentStyle={{ background: 'var(--dash-surface)', border: '1px solid var(--dash-border)', color: 'var(--dash-text)', borderRadius: 8 }}
-                    labelStyle={{ color: '#0f172a' }} />
-                  <Line type="monotone" dataKey="count" stroke={theme.accent} strokeWidth={2.5}
-                    dot={{ fill: theme.accent, r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </Card>
-
-            {/* Rating Distribution */}
-            <Card>
-              <SectionTitle>Rating Distribution</SectionTitle>
-              {ratingDist.length === 0
-                ? <p className="text-slate-500 text-sm">No ratings collected yet</p>
-                : (
-                  <div className="space-y-1">
-                    {[5, 4, 3, 2, 1].map((star) => {
-                      const found = ratingDist.find((r) => r.rating === star)
-                      return <RatingBar key={star} rating={star} count={found?.count ?? 0} max={maxRating} />
-                    })}
-                  </div>
-                )}
-              {avgRating !== null && (
-                <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
-                  <span className="text-sm text-slate-500">Overall Average</span>
-                  <span className="text-lg font-bold" style={{ color: 'var(--dash-ink-rating)' }}>{avgRating} / 5</span>
-                </div>
-              )}
-            </Card>
-          </div>
-
-          {/* ── Recent Reviews (preview, click to see all) ──────────────── */}
-          <Card className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <SectionTitle>Recent Reviews</SectionTitle>
-              <button onClick={() => setTab('reviews')}
-                className="text-xs font-black hover:underline"
-                style={{ color: theme.accent }}>
-                View all →
+            <div className="flex flex-wrap items-center gap-2.5 lg:justify-end">
+              <ThemeSelector selected={themeKey} onSelect={selectTheme} />
+              <div className="flex flex-wrap items-center gap-2.5 text-xs font-bold text-[var(--dash-muted)]">
+                {loadedAt && <span>Data as of {loadedAt}</span>}
+              </div>
+              <button
+                onClick={() => router.refresh()}
+                className="w-fit rounded-full border border-[var(--dash-border)] bg-[var(--dash-input)] px-3 py-1.5 text-xs font-black text-[var(--dash-muted)] transition-colors hover:border-blue-300 hover:text-blue-500"
+              >
+                ↻ Refresh
+              </button>
+              <button
+                onClick={async () => {
+                  await fetch('/api/dashboard/auth', { method: 'DELETE' })
+                  router.push('/dashboard/login')
+                }}
+                className="w-fit rounded-full border border-[var(--dash-border)] bg-[var(--dash-input)] px-3 py-1.5 text-xs font-black text-[var(--dash-muted)] transition-colors hover:border-red-300 hover:text-red-500"
+              >
+                Logout
               </button>
             </div>
-            <ReviewsPanel reviews={recentReviews.slice(0, 6)} />
-          </Card>
+          </div>
+        </div>
 
-          <p className="text-center text-slate-700 text-xs mt-8">
-            NexusAgent · Customer Review Analytics · © {new Date().getFullYear()}
-          </p>
-        </>
+        {/* ── Tab content ───────────────────────────────────────────────────── */}
+        {tab === 'analytics' && (
+          <>
+            {/* ── AI Search ───────────────────────────────────────────────── */}
+            <SearchPanel />
+
+                {/* ── Operational Position (3D Financial Style Position Cards) ── */}
+                <div className="mb-3 flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+                  <h2 className="text-xs font-black uppercase tracking-[0.16em] text-amber-950/80">Operational Position</h2>
+                  <p className="text-xs font-semibold text-[var(--dash-muted)]">
+                    Volume, sentiment shares and customer satisfaction to date
+                  </p>
+                </div>
+          <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-7">
+                    <ThreeDMetricCard
+                      label="Total"
+                      value={totalReviews}
+                      sub="All recorded reviews"
+                      icon="📋"
+                      tone="blue"
+                      progressPct={100}
+                      highlight
+                      info="Total customer interactions and feedback received across all outlets."
+                    />
+                    <ThreeDMetricCard
+                      label="Positive"
+                      value={positive}
+                      sub={`${totalReviews ? Math.round(positive / totalReviews * 100) : 0}% of dataset`}
+                      icon="✨"
+                      tone="green"
+                      progressPct={totalReviews ? Math.round(positive / totalReviews * 100) : 0}
+                      info="Reviews indicating positive customer satisfaction and approval."
+                    />
+                    <ThreeDMetricCard
+                      label="Negative"
+                      value={negative}
+                      sub={`${totalReviews ? Math.round(negative / totalReviews * 100) : 0}% of dataset`}
+                      icon="⚠️"
+                      tone="orange"
+                      progressPct={totalReviews ? Math.round(negative / totalReviews * 100) : 0}
+                      info="Dissatisfied feedback not escalating to formal complaints."
+                    />
+                    <ThreeDMetricCard
+                      label="Complaints"
+                      value={complaint}
+                      sub={`${totalReviews ? Math.round(complaint / totalReviews * 100) : 0}% of dataset`}
+                      icon="🚨"
+                      tone="red"
+                      isNegative={complaint > 0}
+                      progressPct={totalReviews ? Math.round(complaint / totalReviews * 100) : 0}
+                      info="High-priority customer grievances requiring active management."
+                    />
+                    <ThreeDMetricCard
+                      label="Suggestions"
+                      value={suggestion}
+                      sub={`${totalReviews ? Math.round(suggestion / totalReviews * 100) : 0}% of dataset`}
+                      icon="💡"
+                      tone="purple"
+                      progressPct={totalReviews ? Math.round(suggestion / totalReviews * 100) : 0}
+                      info="Actionable proposals and product improvement suggestions."
+                    />
+                    <ThreeDMetricCard
+                      label="Avg Rating"
+                      value={avgRating !== null ? `${avgRating}/5` : '—'}
+                      sub={avgRating ? `${Math.round((avgRating / 5) * 100)}% overall score` : 'No rating data'}
+                      icon="★"
+                      tone="amber"
+                      progressPct={avgRating ? Math.round((avgRating / 5) * 100) : 0}
+                      info="Weighted star rating across all rated customer encounters."
+                    />
+                    <ThreeDMetricCard
+                      label="Satisfaction"
+                      value={satisfaction !== null ? `${satisfaction}%` : '—'}
+                    sub={satisfaction !== null && satisfaction >= 70 ? 'Target achieved' : 'Needs attention'}
+                    icon="🎯"
+                    color={satisfactionColor}
+                    tone={satisfaction !== null && satisfaction >= 70 ? 'green' : satisfaction !== null && satisfaction >= 50 ? 'amber' : 'red'}
+                    progressPct={satisfaction ?? 0}
+                    info="Net customer satisfaction percentage."
+            />
+                  </div>
+
+                  {/* ── Risk & Outlets Standing ── */}
+                  <div className="mb-3 flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+                    <h2 className="text-xs font-black uppercase tracking-[0.16em] text-amber-950/80">Risk & Outlet Benchmarks</h2>
+                    <p className="text-xs font-semibold text-[var(--dash-muted)]">
+                      Follow-up queue and branch standing metrics
+                    </p>
+                  </div>
+                  <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <ThreeDInsightCard
+              label="Complaint Rate"
+                      value={`${complaintRate}%`}
+                      detail={complaintRate >= 20 ? 'Needs active management' : 'Within current tolerance'}
+                      icon="🚨"
+                      tone={complaintRate >= 20 ? 'red' : 'green'}
+                      progressPct={complaintRate}
+                      info="Percentage of interactions classified as formal complaints."
+                    />
+                      <ThreeDInsightCard
+              label="Follow-up Queue"
+                      value={pendingFollowUps}
+                      detail={pendingFollowUps === 0 ? 'No open recovery work' : `${pendingFollowUps} open customer recovery items`}
+                      icon="⏱️"
+                      tone={pendingFollowUps > 0 ? 'amber' : 'green'}
+                      progressPct={totalReviews ? Math.min(100, Math.round((pendingFollowUps / totalReviews) * 100)) : 0}
+                      info="Pending unresolved feedback awaiting outreach."
+                    />
+                      <ThreeDInsightCard
+              label="Strongest Outlet"
+                      value={bestShop?.name ?? '—'}
+                      detail={bestShop?.satisfaction !== null && bestShop?.satisfaction !== undefined ? `${bestShop.satisfaction}% satisfaction score` : 'No rated outlet yet'}
+                      icon="🏆"
+                      tone="blue"
+                      progressPct={bestShop?.satisfaction ?? 0}
+                      info="Highest rated branch by customer satisfaction."
+                    />
+                      <ThreeDInsightCard
+              label="Lowest Rated"
+                      value={lowestShop?.name ?? '—'}
+                      detail={lowestShop?.satisfaction !== null && lowestShop?.satisfaction !== undefined ? `${lowestShop.satisfaction}% satisfaction score` : 'No rated outlet yet'}
+                      icon="📍"
+                      tone={lowestShop && (lowestShop.satisfaction ?? 100) < 60 ? 'red' : 'slate'}
+                      progressPct={lowestShop?.satisfaction ?? 0}
+                      info="Lowest ranking outlet requiring quality review."
+                    />
+                  </div>
+
+                  <Divider />
+
+                  {/* ── Sentiment + Category (Modern 3D Visualizations) ──────────── */}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
+
+                    {/* Sentiment Analysis - 3D Extruded Donut */}
+                    <Card>
+                      <div className="flex items-start justify-between mb-3 gap-2">
+                        <div>
+                          <SectionTitle>Sentiment Breakdown</SectionTitle>
+                          <p className="text-xs text-[var(--dash-muted)] font-medium">
+                            {totalReviews ? `${positiveRate}% satisfaction across ${totalReviews} recorded reviews` : 'Customer sentiment breakdown'}
+                          </p>
+                        </div>
+                      </div>
+                      <ThreeDDonutChart
+                        data={[
+                          { name: SENTIMENT_LABEL['positive'] ?? 'Positive', value: positive, color: '#22c55e', gradientFrom: '#16a34a', gradientTo: '#4ade80' },
+                          { name: SENTIMENT_LABEL['negative'] ?? 'Negative', value: negative, color: '#f97316', gradientFrom: '#ea580c', gradientTo: '#fb923c' },
+                          { name: SENTIMENT_LABEL['complaint'] ?? 'Complaint', value: complaint, color: '#ef4444', gradientFrom: '#dc2626', gradientTo: '#f87171' },
+                          { name: SENTIMENT_LABEL['suggestion'] ?? 'Suggestion', value: suggestion, color: '#6366f1', gradientFrom: '#4f46e5', gradientTo: '#818cf8' },
+                        ]}
+                        centerLabel="reviews"
+                        centerValue={totalReviews}
+                        size={220}
+                      />
+                    </Card>
+
+                    {/* Category Analysis - 3D Horizontal Bars */}
+                    <Card>
+                      <div className="flex items-start justify-between mb-3 gap-2">
+                        <div>
+                          <SectionTitle>Category Breakdown</SectionTitle>
+                          <p className="text-xs text-[var(--dash-muted)] font-medium">
+                            Feedback volume and sentiment split across operations
+                          </p>
+                        </div>
+                      </div>
+                      <ThreeDHorizontalBar
+                        items={Object.entries(categorySentiment)
+                          .sort((a, b) => b[1].total - a[1].total)
+                          .map(([cat, d]) => ({
+                            label: cat,
+                            value: d.total,
+                            percentage: maxCatTotal ? Math.round((d.total / maxCatTotal) * 100) : 0,
+                            segments: [
+                              { name: 'Positive', value: d.positive, color: '#22c55e', ink: SENTIMENT_INK.positive },
+                              { name: 'Negative', value: d.negative, color: '#f97316', ink: SENTIMENT_INK.negative },
+                              { name: 'Complaint', value: d.complaint, color: '#ef4444', ink: SENTIMENT_INK.complaint },
+                              { name: 'Suggestion', value: d.suggestion, color: '#6366f1', ink: SENTIMENT_INK.suggestion },
+                            ],
+                          }))}
+                        maxValue={maxCatTotal}
+                        unit="reviews"
+                        highlightTop={true}
+                      />
+                      <div className="flex gap-3 mt-4 text-xs text-slate-500 flex-wrap pt-3 border-t border-[var(--dash-border)]">
+                        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#22c55e] inline-block shadow-sm" />Positive</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#f97316] inline-block shadow-sm" />Negative</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] inline-block shadow-sm" />Complaint</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#6366f1] inline-block shadow-sm" />Suggestion</span>
+                      </div>
+                    </Card>
+                  </div>
+
+                  {/* ── Shop Performance ────────────────────────────────────────── */}
+                  <SectionTitle>Outlet Performance</SectionTitle>
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
+                    {rankedShops.map((shop, i) => <ShopCard key={shop.id} shop={shop} rank={i + 1} />)}
+                  </div>
+
+                  <Divider />
+
+                  {/* ── Top Issues + Top Suggestions ────────────────────────────── */}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
+
+                    {/* Top Issues */}
+                    <Card>
+                      <SectionTitle>Top Issues Requiring Attention</SectionTitle>
+                      {topIssues.length === 0
+                        ? <p className="text-slate-500 text-sm">No critical issues found.</p>
+                        : (
+                          <div className="space-y-2">
+                            {topIssues.map((issue, i) => (
+                              <div key={i} className={`flex items-center gap-3 p-2.5 ${insetCls} rounded-lg`}>
+                                <Dot color={issue.sentiment === 'complaint' ? '#ef4444' : '#f97316'} />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-slate-800 capitalize break-words">{issue.subcategory}</p>
+                                  <p className="text-xs text-slate-500 capitalize">{issue.category}</p>
+                                </div>
+                                <span className="text-sm font-bold shrink-0"
+                                  style={{ color: issue.sentiment === 'complaint' ? SENTIMENT_INK.complaint : SENTIMENT_INK.negative }}>
+                                  {issue.count}×
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                    </Card>
+
+                    {/* Top Suggestions */}
+                    <Card>
+                      <SectionTitle>Top Customer Suggestions</SectionTitle>
+                      {topSuggestions.length === 0
+                        ? <p className="text-slate-500 text-sm">No suggestions recorded yet</p>
+                        : (
+                          <div className="space-y-2">
+                            {topSuggestions.map((s, i) => (
+                              <div key={i} className={`flex items-center gap-3 p-2.5 ${insetCls} rounded-lg`}>
+                                <Dot color="#6366f1" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-slate-800 capitalize break-words">{s.subcategory}</p>
+                                  <p className="text-xs text-slate-500 capitalize">{s.category}</p>
+                                </div>
+                                <span className="text-sm font-bold shrink-0" style={{ color: SENTIMENT_INK.suggestion }}>{s.count}×</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                    </Card>
+                  </div>
+
+                  {/* ── Trend + Rating Distribution ─────────────────────────────── */}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
+
+                    {/* Monthly Trend - 3D Cylindrical Columns & Trend Line Toggle */}
+                    <Card>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+                        <div>
+                          <SectionTitle>Monthly Review Volume</SectionTitle>
+                          <p className="text-xs text-[var(--dash-muted)] font-medium">
+                            {busiestMonth
+                              ? `${busiestMonth.month} was the busiest month with ${busiestMonth.count} reviews recorded.`
+                              : 'Historical monthly review volume'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-inset)] p-1 text-xs font-black shrink-0 self-start sm:self-auto">
+                          <button
+                            type="button"
+                            onClick={() => setTrendView('3d')}
+                            className={`px-3 py-1 rounded-lg transition-all ${trendView === '3d'
+                                ? 'bg-[var(--dash-surface)] text-[var(--dash-heading)] shadow-sm'
+                                : 'text-[var(--dash-muted)] hover:text-[var(--dash-heading)]'
+                              }`}
+                          >
+                            3D Columns
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setTrendView('line')}
+                            className={`px-3 py-1 rounded-lg transition-all ${trendView === 'line'
+                                ? 'bg-[var(--dash-surface)] text-[var(--dash-heading)] shadow-sm'
+                                : 'text-[var(--dash-muted)] hover:text-[var(--dash-heading)]'
+                              }`}
+                          >
+                            Trend Line
+                          </button>
+                        </div>
+                      </div>
+
+                      {trendView === '3d' ? (
+                        <ThreeDColumnChart
+                          data={trendData.map((t) => ({
+                            label: t.month,
+                            value: t.count,
+                            color: 'blue',
+                          }))}
+                          unit="reviews"
+                          benchmarkValue={avgMonthlyCount}
+                          benchmarkLabel="Monthly Average"
+                          height={260}
+                        />
+                      ) : (
+                        <ResponsiveContainer width="100%" height={260}>
+                          <LineChart data={trendData} margin={{ left: 0, right: 8 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+                            <XAxis dataKey="month" tick={{ fill: CHART_TICK, fontSize: 11 }} />
+                            <YAxis tick={{ fill: CHART_TICK, fontSize: 11 }} />
+                            <Tooltip contentStyle={{ background: 'var(--dash-surface)', border: '1px solid var(--dash-border)', color: 'var(--dash-text)', borderRadius: 8 }}
+                              labelStyle={{ color: '#0f172a' }} />
+                            <Line type="monotone" dataKey="count" stroke={theme.accent} strokeWidth={2.5}
+                              dot={{ fill: theme.accent, r: 4 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      )}
+                    </Card>
+
+                    {/* Rating Distribution */}
+                    <Card>
+                      <SectionTitle>Rating Distribution</SectionTitle>
+                      {ratingDist.length === 0
+                        ? <p className="text-slate-500 text-sm">No ratings collected yet</p>
+                        : (
+                          <div className="space-y-1">
+                            {[5, 4, 3, 2, 1].map((star) => {
+                              const found = ratingDist.find((r) => r.rating === star)
+                              return <RatingBar key={star} rating={star} count={found?.count ?? 0} max={maxRating} />
+                            })}
+                          </div>
+                        )}
+                      {avgRating !== null && (
+                        <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
+                          <span className="text-sm text-slate-500">Overall Average</span>
+                          <span className="text-lg font-bold" style={{ color: 'var(--dash-ink-rating)' }}>{avgRating} / 5</span>
+                        </div>
+                      )}
+                    </Card>
+                  </div>
+
+                  {/* ── Recent Reviews (preview, click to see all) ──────────────── */}
+                  <Card className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <SectionTitle>Recent Reviews</SectionTitle>
+                      <button onClick={() => setTab('reviews')}
+                        className="text-xs font-black hover:underline"
+                        style={{ color: theme.accent }}>
+                        View all →
+                      </button>
+                    </div>
+                    <ReviewsPanel reviews={recentReviews.slice(0, 6)} />
+                  </Card>
+
+                  <p className="text-center text-slate-700 text-xs mt-8">
+                    NexusAgent · Customer Review Analytics · © {new Date().getFullYear()}
+                  </p>
+                </>
       )}
 
-      {tab === 'reviews' && (
-        <Card>
-          <SectionTitle>All Reviews — Follow-up Tracker</SectionTitle>
-          <ReviewsPanel reviews={recentReviews} />
-        </Card>
-      )}
+                {tab === 'reviews' && (
+                  <Card>
+                    <SectionTitle>All Reviews — Follow-up Tracker</SectionTitle>
+                    <ReviewsPanel reviews={recentReviews} />
+                  </Card>
+                )}
 
-      {tab === 'shops' && <ShopsPanel />}
+                {tab === 'shops' && <ShopsPanel />}
 
-      {tab === 'reports' && (
-        <ReportsTab
-          shops={shops.map((s) => ({ id: s.id, name: s.name, city: s.city ?? null }))}
-          isAdmin={session.role === 'admin'}
-        />
-      )}
-      </div>
-    </div>
-  )
+                {tab === 'reports' && (
+                  <ReportsTab
+                    shops={shops.map((s) => ({ id: s.id, name: s.name, city: s.city ?? null }))}
+                    isAdmin={session.role === 'admin'}
+                  />
+                )}
+            </div>
+          </div>
+        )
 }
 
-// ── ShopsPanel ─────────────────────────────────────────────────────────────────
+        // ── ShopsPanel ─────────────────────────────────────────────────────────────────
 
-interface ShopRow {
-  id: string
-  tenantId: string
-  name: string
-  city: string | null
-  state: string | null
-  town: string | null
-  address: string | null
-  phone: string | null
-  mobile: string | null
-  email: string | null
-  lat: number | null
-  lng: number | null
-  branchCode: string | null
-  createdAt: string
+        interface ShopRow {
+          id: string
+        tenantId: string
+        name: string
+        city: string | null
+        state: string | null
+        town: string | null
+        address: string | null
+        phone: string | null
+        mobile: string | null
+        email: string | null
+        lat: number | null
+        lng: number | null
+        branchCode: string | null
+        createdAt: string
 }
 
-// Shape of the edit form while the user is editing a shop
-interface EditFormState {
-  name: string
-  city: string
-  state: string
-  town: string
-  address: string
-  phone: string
-  mobile: string
-  email: string
-  lat: string
-  lng: string
+        // Shape of the edit form while the user is editing a shop
+        interface EditFormState {
+          name: string
+        city: string
+        state: string
+        town: string
+        address: string
+        phone: string
+        mobile: string
+        email: string
+        lat: string
+        lng: string
 }
 
-function shopToForm(shop: ShopRow): EditFormState {
+        function shopToForm(shop: ShopRow): EditFormState {
   return {
-    name:    shop.name,
-    city:    shop.city    ?? '',
-    state:   shop.state   ?? '',
-    town:    shop.town    ?? '',
-    address: shop.address ?? '',
-    phone:   shop.phone   ?? '',
-    mobile:  shop.mobile  ?? '',
-    email:   shop.email   ?? '',
-    lat:     shop.lat     !== null ? String(shop.lat) : '',
-    lng:     shop.lng     !== null ? String(shop.lng) : '',
+          name:    shop.name,
+        city:    shop.city    ?? '',
+        state:   shop.state   ?? '',
+        town:    shop.town    ?? '',
+        address: shop.address ?? '',
+        phone:   shop.phone   ?? '',
+        mobile:  shop.mobile  ?? '',
+        email:   shop.email   ?? '',
+        lat:     shop.lat     !== null ? String(shop.lat) : '',
+        lng:     shop.lng     !== null ? String(shop.lng) : '',
   }
 }
 
-// ── Single shop card (view mode) ───────────────────────────────────────────────
-function ShopViewCard({
-  shop,
-  onEdit,
+        // ── Single shop card (view mode) ───────────────────────────────────────────────
+        function ShopViewCard({
+          shop,
+          onEdit,
 }: {
-  shop: ShopRow
+          shop: ShopRow
   onEdit: () => void
 }) {
   return (
-    <div className={`${surfaceCls} rounded-xl p-5 flex flex-col gap-3`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-slate-900 break-words">🏪 {shop.name}</p>
-          {shop.branchCode && (
-            <p className="text-xs text-slate-500 mt-0.5">Code: {shop.branchCode}</p>
-          )}
-        </div>
-        <button
-          onClick={onEdit}
-          className="shrink-0 px-3 py-1 bg-white hover:bg-blue-50 text-xs text-slate-600 hover:text-blue-700 rounded-lg transition-colors font-semibold border border-slate-200"
-        >
-          Edit
-        </button>
-      </div>
+        <div className={`${surfaceCls} rounded-xl p-5 flex flex-col gap-3`}>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-slate-900 break-words">🏪 {shop.name}</p>
+              {shop.branchCode && (
+                <p className="text-xs text-slate-500 mt-0.5">Code: {shop.branchCode}</p>
+              )}
+            </div>
+            <button
+              onClick={onEdit}
+              className="shrink-0 px-3 py-1 bg-white hover:bg-blue-50 text-xs text-slate-600 hover:text-blue-700 rounded-lg transition-colors font-semibold border border-slate-200"
+            >
+              Edit
+            </button>
+          </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-slate-500">
-        {shop.state   && <span>📍 {shop.state}</span>}
-        {shop.city    && <span>🏙️ {shop.city}</span>}
-        {shop.town    && <span>🗺️ {shop.town}</span>}
-        {shop.address && <span className="sm:col-span-2 text-slate-600 break-words">{shop.address}</span>}
-        {shop.phone   && <span>📞 {shop.phone}</span>}
-        {shop.mobile  && <span>📱 {shop.mobile}</span>}
-        {shop.email   && <span className="sm:col-span-2 break-words">✉️ {shop.email}</span>}
-        {(shop.lat !== null && shop.lng !== null) && (
-          <span className="sm:col-span-2">
-            🌐 {shop.lat?.toFixed(5)}, {shop.lng?.toFixed(5)}
-          </span>
-        )}
-      </div>
-    </div>
-  )
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-slate-500">
+            {shop.state && <span>📍 {shop.state}</span>}
+            {shop.city && <span>🏙️ {shop.city}</span>}
+            {shop.town && <span>🗺️ {shop.town}</span>}
+            {shop.address && <span className="sm:col-span-2 text-slate-600 break-words">{shop.address}</span>}
+            {shop.phone && <span>📞 {shop.phone}</span>}
+            {shop.mobile && <span>📱 {shop.mobile}</span>}
+            {shop.email && <span className="sm:col-span-2 break-words">✉️ {shop.email}</span>}
+            {(shop.lat !== null && shop.lng !== null) && (
+              <span className="sm:col-span-2">
+                🌐 {shop.lat?.toFixed(5)}, {shop.lng?.toFixed(5)}
+              </span>
+            )}
+          </div>
+        </div>
+        )
 }
 
-// ── Single shop card (edit mode) ───────────────────────────────────────────────
-function ShopEditCard({
-  shop,
-  onSaved,
-  onCancel,
+        // ── Single shop card (edit mode) ───────────────────────────────────────────────
+        function ShopEditCard({
+          shop,
+          onSaved,
+          onCancel,
 }: {
-  shop: ShopRow
+          shop: ShopRow
   onSaved: (updated: ShopRow) => void
   onCancel: () => void
 }) {
   const [form, setForm]       = useState<EditFormState>(shopToForm(shop))
-  const [saving, setSaving]   = useState(false)
-  const [toast, setToast]     = useState(false)
-  const [errMsg, setErrMsg]   = useState<string | null>(null)
+          const [saving, setSaving]   = useState(false)
+          const [toast, setToast]     = useState(false)
+          const [errMsg, setErrMsg]   = useState<string | null>(null)
 
-  // Derive city list based on selected state
-  const cityOptions: string[] = form.state ? (CITIES_BY_PROVINCE[form.state] ?? []) : []
-  const freeCityInput = cityOptions.length === 0
+          // Derive city list based on selected state
+          const cityOptions: string[] = form.state ? (CITIES_BY_PROVINCE[form.state] ?? []) : []
+          const freeCityInput = cityOptions.length === 0
 
-  function set(field: keyof EditFormState) {
+          function set(field: keyof EditFormState) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-      setForm((prev) => ({ ...prev, [field]: e.target.value }))
-    }
+            setForm((prev) => ({ ...prev, [field]: e.target.value }))
+          }
   }
 
-  // If state changes, reset city only if the current city is not in the new list
-  function handleStateChange(e: React.ChangeEvent<HTMLSelectElement>) {
+          // If state changes, reset city only if the current city is not in the new list
+          function handleStateChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const newState = e.target.value
-    const newCities = CITIES_BY_PROVINCE[newState] ?? []
+            const newCities = CITIES_BY_PROVINCE[newState] ?? []
     setForm((prev) => ({
-      ...prev,
-      state: newState,
-      city: newCities.includes(prev.city) ? prev.city : '',
+              ...prev,
+              state: newState,
+            city: newCities.includes(prev.city) ? prev.city : '',
     }))
   }
 
-  function detectLocation() {
+            function detectLocation() {
     if (!navigator.geolocation) return
-    navigator.geolocation.getCurrentPosition(
+            navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setForm((prev) => ({
-          ...prev,
-          lat: String(pos.coords.latitude),
-          lng: String(pos.coords.longitude),
-        }))
-      },
-      () => { /* ignore errors silently */ },
-    )
+              setForm((prev) => ({
+                ...prev,
+                lat: String(pos.coords.latitude),
+                lng: String(pos.coords.longitude),
+              }))
+            },
+      () => { /* ignore errors silently */},
+            )
   }
 
-  async function handleSave() {
-    setSaving(true)
+            async function handleSave() {
+              setSaving(true)
     setErrMsg(null)
-    try {
+            try {
       const res = await fetch(`/api/shops/${shop.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name:    form.name,
-          city:    form.city,
-          state:   form.state,
-          town:    form.town,
-          address: form.address,
-          phone:   form.phone,
-          mobile:  form.mobile,
-          email:   form.email,
-          lat:     form.lat,
-          lng:     form.lng,
+              method: 'PATCH',
+            headers: {'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name:    form.name,
+            city:    form.city,
+            state:   form.state,
+            town:    form.town,
+            address: form.address,
+            phone:   form.phone,
+            mobile:  form.mobile,
+            email:   form.email,
+            lat:     form.lat,
+            lng:     form.lng,
         }),
       })
-      const data = await res.json() as ShopRow & { error?: string }
-      if (!res.ok) {
-        setErrMsg(data.error ?? 'Save failed')
+            const data = await res.json() as ShopRow & {error ?: string}
+            if (!res.ok) {
+              setErrMsg(data.error ?? 'Save failed')
         return
       }
-      onSaved(data)
-      setToast(true)
+            onSaved(data)
+            setToast(true)
       setTimeout(() => setToast(false), 2500)
     } catch {
-      setErrMsg('Network error. Please try again.')
-    } finally {
-      setSaving(false)
-    }
+              setErrMsg('Network error. Please try again.')
+            } finally {
+              setSaving(false)
+            }
   }
 
-  const shopInputCls = 'w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-colors'
-  const labelCls = 'block text-xs text-slate-600 mb-1'
+            const shopInputCls = 'w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-colors'
+            const labelCls = 'block text-xs text-slate-600 mb-1'
 
-  return (
-    <div className={`${surfaceCls} rounded-xl p-5 flex flex-col gap-4 ring-4 ring-blue-50`}>
-      {/* Success toast */}
-      {toast && (
-        <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-2 rounded-lg text-center">
-          Saved!
-        </div>
-      )}
-      {errMsg && (
-        <p role="alert" className="text-sm text-red-700">{errMsg}</p>
-      )}
+            return (
+            <div className={`${surfaceCls} rounded-xl p-5 flex flex-col gap-4 ring-4 ring-blue-50`}>
+              {/* Success toast */}
+              {toast && (
+                <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-2 rounded-lg text-center">
+                  Saved!
+                </div>
+              )}
+              {errMsg && (
+                <p role="alert" className="text-sm text-red-700">{errMsg}</p>
+              )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Name */}
-        <div>
-          <label htmlFor={`shop-name-${shop.id}`} className={labelCls}>Name</label>
-          <input id={`shop-name-${shop.id}`} type="text" value={form.name} onChange={set('name')} className={shopInputCls} />
-        </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Name */}
+                <div>
+                  <label htmlFor={`shop-name-${shop.id}`} className={labelCls}>Name</label>
+                  <input id={`shop-name-${shop.id}`} type="text" value={form.name} onChange={set('name')} className={shopInputCls} />
+                </div>
 
-        {/* Branch Code — readonly */}
-        <div>
-          <label htmlFor={`shop-branch-code-${shop.id}`} className={labelCls}>Branch Code</label>
-          <input id={`shop-branch-code-${shop.id}`} type="text" value={shop.branchCode ?? ''} disabled readOnly className={`${shopInputCls} opacity-60 cursor-not-allowed bg-slate-50`} />
-        </div>
+                {/* Branch Code — readonly */}
+                <div>
+                  <label htmlFor={`shop-branch-code-${shop.id}`} className={labelCls}>Branch Code</label>
+                  <input id={`shop-branch-code-${shop.id}`} type="text" value={shop.branchCode ?? ''} disabled readOnly className={`${shopInputCls} opacity-60 cursor-not-allowed bg-slate-50`} />
+                </div>
 
-        {/* State/Province */}
-        <div>
-          <label htmlFor={`shop-province-state-${shop.id}`} className={labelCls}>Province / State</label>
-          <select id={`shop-province-state-${shop.id}`} value={form.state} onChange={handleStateChange} className={shopInputCls}>
-            <option value="">— Select province —</option>
-            {PROVINCES.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-        </div>
+                {/* State/Province */}
+                <div>
+                  <label htmlFor={`shop-province-state-${shop.id}`} className={labelCls}>Province / State</label>
+                  <select id={`shop-province-state-${shop.id}`} value={form.state} onChange={handleStateChange} className={shopInputCls}>
+                    <option value="">— Select province —</option>
+                    {PROVINCES.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                </div>
 
-        {/* City — dropdown if province has cities, otherwise free text */}
-        <div>
-          <label htmlFor={`shop-city-${shop.id}`} className={labelCls}>City</label>
-          {freeCityInput ? (
-            <input id={`shop-city-${shop.id}`} type="text" value={form.city} onChange={set('city')} placeholder="Enter city" className={shopInputCls} />
-          ) : (
-            <select id={`shop-city-${shop.id}`} value={form.city} onChange={set('city')} className={shopInputCls}>
-              <option value="">— Select city —</option>
-              {cityOptions.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          )}
-        </div>
+                {/* City — dropdown if province has cities, otherwise free text */}
+                <div>
+                  <label htmlFor={`shop-city-${shop.id}`} className={labelCls}>City</label>
+                  {freeCityInput ? (
+                    <input id={`shop-city-${shop.id}`} type="text" value={form.city} onChange={set('city')} placeholder="Enter city" className={shopInputCls} />
+                  ) : (
+                    <select id={`shop-city-${shop.id}`} value={form.city} onChange={set('city')} className={shopInputCls}>
+                      <option value="">— Select city —</option>
+                      {cityOptions.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
 
-        {/* Town */}
-        <div>
-          <label htmlFor={`shop-town-area-${shop.id}`} className={labelCls}>Town / Area</label>
-          <input id={`shop-town-area-${shop.id}`} type="text" value={form.town} onChange={set('town')} placeholder="e.g. Model Town" className={shopInputCls} />
-        </div>
+                {/* Town */}
+                <div>
+                  <label htmlFor={`shop-town-area-${shop.id}`} className={labelCls}>Town / Area</label>
+                  <input id={`shop-town-area-${shop.id}`} type="text" value={form.town} onChange={set('town')} placeholder="e.g. Model Town" className={shopInputCls} />
+                </div>
 
-        {/* Phone */}
-        <div>
-          <label htmlFor={`shop-phone-${shop.id}`} className={labelCls}>Phone</label>
-          <input id={`shop-phone-${shop.id}`} type="text" value={form.phone} onChange={set('phone')} placeholder="+92 XX XXXXXXX" className={shopInputCls} />
-        </div>
+                {/* Phone */}
+                <div>
+                  <label htmlFor={`shop-phone-${shop.id}`} className={labelCls}>Phone</label>
+                  <input id={`shop-phone-${shop.id}`} type="text" value={form.phone} onChange={set('phone')} placeholder="+92 XX XXXXXXX" className={shopInputCls} />
+                </div>
 
-        {/* Mobile */}
-        <div>
-          <label htmlFor={`shop-mobile-${shop.id}`} className={labelCls}>Mobile</label>
-          <input id={`shop-mobile-${shop.id}`} type="text" value={form.mobile} onChange={set('mobile')} placeholder="+92 3XX XXXXXXX" className={shopInputCls} />
-        </div>
+                {/* Mobile */}
+                <div>
+                  <label htmlFor={`shop-mobile-${shop.id}`} className={labelCls}>Mobile</label>
+                  <input id={`shop-mobile-${shop.id}`} type="text" value={form.mobile} onChange={set('mobile')} placeholder="+92 3XX XXXXXXX" className={shopInputCls} />
+                </div>
 
-        {/* Email */}
-        <div>
-          <label htmlFor={`shop-email-${shop.id}`} className={labelCls}>Email</label>
-          <input id={`shop-email-${shop.id}`} type="email" value={form.email} onChange={set('email')} placeholder="shop@example.com" className={shopInputCls} />
-        </div>
+                {/* Email */}
+                <div>
+                  <label htmlFor={`shop-email-${shop.id}`} className={labelCls}>Email</label>
+                  <input id={`shop-email-${shop.id}`} type="email" value={form.email} onChange={set('email')} placeholder="shop@example.com" className={shopInputCls} />
+                </div>
 
-        {/* Address — full width */}
-        <div className="sm:col-span-2">
-          <label htmlFor={`shop-address-${shop.id}`} className={labelCls}>Address</label>
-          <textarea id={`shop-address-${shop.id}`} rows={2} value={form.address} onChange={set('address')} placeholder="Street address" className={shopInputCls} />
-        </div>
+                {/* Address — full width */}
+                <div className="sm:col-span-2">
+                  <label htmlFor={`shop-address-${shop.id}`} className={labelCls}>Address</label>
+                  <textarea id={`shop-address-${shop.id}`} rows={2} value={form.address} onChange={set('address')} placeholder="Street address" className={shopInputCls} />
+                </div>
 
-        {/* Latitude */}
-        <div>
-          <label htmlFor={`shop-latitude-${shop.id}`} className={labelCls}>Latitude</label>
-          <input id={`shop-latitude-${shop.id}`} type="number" step="0.000001" value={form.lat} onChange={set('lat')} placeholder="e.g. 33.6844" className={shopInputCls} />
-        </div>
+                {/* Latitude */}
+                <div>
+                  <label htmlFor={`shop-latitude-${shop.id}`} className={labelCls}>Latitude</label>
+                  <input id={`shop-latitude-${shop.id}`} type="number" step="0.000001" value={form.lat} onChange={set('lat')} placeholder="e.g. 33.6844" className={shopInputCls} />
+                </div>
 
-        {/* Longitude */}
-        <div>
-          <label htmlFor={`shop-longitude-${shop.id}`} className={labelCls}>Longitude</label>
-          <input id={`shop-longitude-${shop.id}`} type="number" step="0.000001" value={form.lng} onChange={set('lng')} placeholder="e.g. 73.0479" className={shopInputCls} />
-        </div>
+                {/* Longitude */}
+                <div>
+                  <label htmlFor={`shop-longitude-${shop.id}`} className={labelCls}>Longitude</label>
+                  <input id={`shop-longitude-${shop.id}`} type="number" step="0.000001" value={form.lng} onChange={set('lng')} placeholder="e.g. 73.0479" className={shopInputCls} />
+                </div>
 
-        {/* Detect location button — full width */}
-        <div className="sm:col-span-2">
-          <button
-            type="button"
-            onClick={detectLocation}
-            className="px-4 py-2 bg-white hover:bg-slate-50 text-xs text-slate-700 rounded-lg border border-slate-300 transition-colors"
-          >
-            📍 Detect Location
-          </button>
-        </div>
-      </div>
+                {/* Detect location button — full width */}
+                <div className="sm:col-span-2">
+                  <button
+                    type="button"
+                    onClick={detectLocation}
+                    className="px-4 py-2 bg-white hover:bg-slate-50 text-xs text-slate-700 rounded-lg border border-slate-300 transition-colors"
+                  >
+                    📍 Detect Location
+                  </button>
+                </div>
+              </div>
 
-      {/* Action buttons */}
-      <div className="flex gap-3 pt-1 flex-wrap">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition-colors"
-        >
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-        <button
-          onClick={onCancel}
-          disabled={saving}
-          className="px-5 py-2 bg-white hover:bg-slate-50 text-sm text-slate-700 rounded-lg border border-slate-300 transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  )
+              {/* Action buttons */}
+              <div className="flex gap-3 pt-1 flex-wrap">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition-colors"
+                >
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+                <button
+                  onClick={onCancel}
+                  disabled={saving}
+                  className="px-5 py-2 bg-white hover:bg-slate-50 text-sm text-slate-700 rounded-lg border border-slate-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+            )
 }
 
-// ── ShopsPanel — fetches shops and renders the grid ───────────────────────────
-function ShopsPanel() {
+            // ── ShopsPanel — fetches shops and renders the grid ───────────────────────────
+            function ShopsPanel() {
   const [shops, setShops]     = useState<ShopRow[]>([])
-  const [loading, setLoading] = useState(true)
-  const [editingId, setEditingId] = useState<string | null>(null)
+            const [loading, setLoading] = useState(true)
+            const [editingId, setEditingId] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/shops')
-      .then((r) => r.json())
-      .then((data: ShopRow[]) => setShops(data))
-      .catch(() => { /* silently fail — shops will just remain empty */ })
-      .finally(() => setLoading(false))
-  }, [])
+              fetch('/api/shops')
+                .then((r) => r.json())
+                .then((data: ShopRow[]) => setShops(data))
+                .catch(() => { /* silently fail — shops will just remain empty */ })
+                .finally(() => setLoading(false))
+            }, [])
 
-  function handleSaved(updated: ShopRow) {
-    setShops((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
+            function handleSaved(updated: ShopRow) {
+              setShops((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
     setEditingId(null)
   }
 
-  if (loading) {
+            if (loading) {
     return (
-      <div role="status" className="flex items-center gap-3 py-16 text-[var(--dash-muted)] text-sm justify-center">
-        <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        Loading shops…
-      </div>
-    )
+            <div role="status" className="flex items-center gap-3 py-16 text-[var(--dash-muted)] text-sm justify-center">
+              <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              Loading shops…
+            </div>
+            )
   }
 
-  if (shops.length === 0) {
+            if (shops.length === 0) {
     return (
-      <div className="py-16 text-center">
-        <p className="text-[var(--dash-muted)] text-sm">No shops found.</p>
-      </div>
-    )
+            <div className="py-16 text-center">
+              <p className="text-[var(--dash-muted)] text-sm">No shops found.</p>
+            </div>
+            )
   }
 
-  return (
-    <div>
-      <SectionTitle>🏪 Shop Management</SectionTitle>
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        {shops.map((shop) =>
-          editingId === shop.id ? (
-            <ShopEditCard
-              key={shop.id}
-              shop={shop}
-              onSaved={handleSaved}
-              onCancel={() => setEditingId(null)}
-            />
-          ) : (
-            <ShopViewCard
-              key={shop.id}
-              shop={shop}
-              onEdit={() => setEditingId(shop.id)}
-            />
-          ),
-        )}
-      </div>
-    </div>
-  )
+            return (
+            <div>
+              <SectionTitle>🏪 Shop Management</SectionTitle>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                {shops.map((shop) =>
+                  editingId === shop.id ? (
+                    <ShopEditCard
+                      key={shop.id}
+                      shop={shop}
+                      onSaved={handleSaved}
+                      onCancel={() => setEditingId(null)}
+                    />
+                  ) : (
+                    <ShopViewCard
+                      key={shop.id}
+                      shop={shop}
+                      onEdit={() => setEditingId(shop.id)}
+                    />
+                  ),
+                )}
+              </div>
+            </div>
+            )
 }
