@@ -93,7 +93,6 @@ interface SearchResult { answer: string; sources: SearchSource[] }
 // ── Palette ────────────────────────────────────────────────────────────────────
 const CHART_GRID = '#e5eaf2'
 const CHART_TICK = '#64748b'
-const DASHBOARD_ACCENT = '#2563eb'
 
 const surfaceCls = 'bg-[var(--dash-surface)] border border-[var(--dash-border)] shadow-[0_18px_50px_var(--dash-shadow)]'
 const insetCls = 'bg-[var(--dash-inset)] border border-[var(--dash-border)]'
@@ -246,17 +245,27 @@ const DASHBOARD_THEMES: Record<DashboardThemeKey, {
 
 // ── Shared UI primitives ───────────────────────────────────────────────────────
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`${surfaceCls} rounded-xl p-4 lg:p-5 ${className}`}>{children}</div>
+  return (
+    <div
+      className={`relative overflow-hidden rounded-2xl border border-[var(--dash-border)] bg-[var(--dash-surface)] p-5 sm:p-6 transition-all duration-300 hover:shadow-xl ${className}`}
+      style={{
+        boxShadow:
+          '0 12px 30px -8px var(--dash-shadow), 0 4px 8px -2px var(--dash-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
+      }}
+    >
+      {/* 3D Top Specular Highlight Edge */}
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
+      {children}
+    </div>
+  )
 }
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="mb-2 text-[0.68rem] font-black text-[var(--dash-muted)] uppercase tracking-[0.16em]">{children}</h2>
-}
-function Divider() {
-  return <div className="border-t border-slate-200 my-8" />
-}
-
-function Dot({ color = DASHBOARD_ACCENT }: { color?: string }) {
-  return <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: color }} />
+  return (
+    <h2 className="mb-2 text-[0.68rem] font-black text-[var(--dash-muted)] uppercase tracking-[0.16em] flex items-center gap-2">
+      <span className="h-1.5 w-1.5 rounded-full bg-[var(--dash-accent)] shadow-xs inline-block" />
+      {children}
+    </h2>
+  )
 }
 
 function ThemeSelector({
@@ -342,7 +351,7 @@ function ShopCard({ shop, rank }: {
       className={`${surfaceCls} relative rounded-2xl p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden`}
       style={{
         boxShadow:
-          '0 10px 25px -5px var(--dash-shadow), inset 0 1px 0 rgba(255,255,255,0.7)',
+          '0 10px 25px -5px var(--dash-shadow), inset 0 1px 0 rgba(255,255,255,0.4)',
       }}
     >
       {/* Top 3D highlight edge */}
@@ -451,8 +460,19 @@ const STATUS_META: Record<string, { label: string; color: string; next: string; 
 function StatusBadge({ status }: { status: string }) {
   const meta = STATUS_META[status] ?? STATUS_META['pending']
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold text-white"
-      style={{ background: meta.color }}>
+    <span
+      className="relative inline-flex items-center gap-1 overflow-hidden px-2.5 py-0.5 rounded-full text-[11px] font-bold text-white shadow-xs"
+      style={{
+        background: `linear-gradient(180deg, ${meta.color} 0%, ${meta.color}dd 100%)`,
+        boxShadow: `0 1px 3px ${meta.color}50`,
+      }}
+    >
+      <div
+        className="absolute inset-x-0 top-0 h-[40%] pointer-events-none rounded-t-full"
+        style={{
+          background: 'linear-gradient(to bottom, rgba(255,255,255,0.45) 0%, transparent 100%)',
+        }}
+      />
       {meta.label}
     </span>
   )
@@ -460,15 +480,38 @@ function StatusBadge({ status }: { status: string }) {
 
 function TicketBadge({ ticketId, priority }: { ticketId: string | null; priority?: string | null }) {
   if (!ticketId) return null
-  const color = priority === 'urgent' ? 'red' : priority === 'high' ? 'amber' : 'slate'
-  const cls = color === 'red'
-    ? 'border-red-200 bg-red-50 text-red-700'
-    : color === 'amber'
-      ? 'border-amber-200 bg-amber-50 text-amber-700'
-      : 'border-slate-200 bg-slate-50 text-slate-700'
+  const isUrgent = priority === 'urgent'
+  const isHigh = priority === 'high'
+
+  const borderStyle = isUrgent
+    ? 'rgba(239, 68, 68, 0.45)'
+    : isHigh
+      ? 'rgba(245, 158, 11, 0.45)'
+      : 'var(--dash-border)'
+
+  const bgStyle = isUrgent
+    ? 'rgba(239, 68, 68, 0.12)'
+    : isHigh
+      ? 'rgba(245, 158, 11, 0.12)'
+      : 'var(--dash-inset)'
+
+  const textStyle = isUrgent
+    ? 'var(--dash-ink-complaint)'
+    : isHigh
+      ? 'var(--dash-ink-negative)'
+      : 'var(--dash-text)'
+
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-black ${cls}`}>
-      {ticketId}
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider shadow-xs"
+      style={{
+        backgroundColor: bgStyle,
+        borderColor: borderStyle,
+        color: textStyle,
+      }}
+    >
+      <span className="text-[11px] leading-none">🎫</span>
+      <span>{ticketId}</span>
     </span>
   )
 }
@@ -1123,19 +1166,23 @@ function ReviewsPanel({ reviews: initial }: { reviews: DashboardData['recentRevi
           <button onClick={clearAll} className="mt-3 text-xs text-blue-600 hover:underline">Clear filters</button>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {filtered.map((r) => (
             <button key={r.id} onClick={() => setSelected(r)}
-              className={`w-full text-left flex gap-3 p-3.5 ${insetCls} rounded-xl hover:bg-blue-50 hover:border-blue-200 transition-colors group`}>
+              className="w-full text-left flex gap-3.5 p-3.5 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-inset)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[var(--dash-accent)]/50 group"
+              style={{
+                boxShadow: '0 2px 8px -2px var(--dash-shadow), inset 0 1px 0 rgba(255,255,255,0.4)',
+              }}
+            >
               <span className="text-xl mt-0.5 shrink-0">
                 {SENTIMENT_EMOJI[r.sentiment ?? ''] ?? '💬'}
               </span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                   <div className="flex items-center gap-2 flex-wrap min-w-0">
-                    <span className="text-xs font-semibold text-slate-800 break-words">🏪 {r.shopName}</span>
+                    <span className="text-xs font-bold text-[var(--dash-heading)] break-words">🏪 {r.shopName}</span>
                     {r.category && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-white text-slate-600 border border-slate-200 capitalize">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--dash-surface)] text-[var(--dash-text)] border border-[var(--dash-border)] capitalize shadow-xs">
                         {CATEGORY_EMOJI[r.category]} {r.category}
                       </span>
                     )}
@@ -1144,13 +1191,13 @@ function ReviewsPanel({ reviews: initial }: { reviews: DashboardData['recentRevi
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {r.rating && <span className="text-xs font-semibold" style={{ color: 'var(--dash-ink-rating)' }}>{RATING_EMOJI[r.rating]} {r.rating}★</span>}
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs font-medium text-[var(--dash-muted)]">
                       {fmtDateTimeShort(r.createdAt)}
                     </span>
-                    <span className="text-xs text-blue-700 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">View →</span>
+                    <span className="text-xs text-[var(--dash-accent)] opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity font-bold">View →</span>
                   </div>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                <p className="text-xs text-[var(--dash-text)] leading-relaxed line-clamp-2">
                   {fmtText(r.summary, 'No summary available')}
                 </p>
                 {(() => {
@@ -1467,14 +1514,19 @@ export function DashboardClient({ data, session, initialTheme }: {
             {/* ── AI Search ───────────────────────────────────────────────── */}
             <SearchPanel />
 
-                {/* ── Operational Position (3D Financial Style Position Cards) ── */}
-                <div className="mb-3 flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
-                  <h2 className="text-xs font-black uppercase tracking-[0.16em] text-amber-950/80">Operational Position</h2>
-                  <p className="text-xs font-semibold text-[var(--dash-muted)]">
-                    Volume, sentiment shares and customer satisfaction to date
-                  </p>
-                </div>
-          <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-7">
+            {/* ── Operational Health & Sentiment (3D Cards) ── */}
+            <div className="mb-3 flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-[var(--dash-accent)] shadow-xs inline-block" />
+                <h2 className="text-xs font-black uppercase tracking-[0.16em] text-[var(--dash-heading)]">
+                  Operational Health & Sentiment
+                </h2>
+              </div>
+              <p className="text-xs font-semibold text-[var(--dash-muted)]">
+                Live customer sentiment shares & satisfaction index
+              </p>
+            </div>
+            <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
                     <ThreeDMetricCard
                       label="Total"
                       value={totalReviews}
@@ -1543,14 +1595,19 @@ export function DashboardClient({ data, session, initialTheme }: {
             />
                   </div>
 
-                  {/* ── Risk & Outlets Standing ── */}
-                  <div className="mb-3 flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
-                    <h2 className="text-xs font-black uppercase tracking-[0.16em] text-amber-950/80">Risk & Outlet Benchmarks</h2>
-                    <p className="text-xs font-semibold text-[var(--dash-muted)]">
-                      Follow-up queue and branch standing metrics
-                    </p>
-                  </div>
-                  <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {/* ── Risk & Outlet Standing ── */}
+            <div className="mb-3 mt-6 flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-amber-500 shadow-xs inline-block" />
+                <h2 className="text-xs font-black uppercase tracking-[0.16em] text-[var(--dash-heading)]">
+                  Risk & Outlet Benchmarks
+                </h2>
+              </div>
+              <p className="text-xs font-semibold text-[var(--dash-muted)]">
+                Follow-up queue and branch comparative standing
+              </p>
+            </div>
+            <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       <ThreeDInsightCard
               label="Complaint Rate"
                       value={`${complaintRate}%`}
@@ -1589,36 +1646,90 @@ export function DashboardClient({ data, session, initialTheme }: {
                     />
                   </div>
 
-                  <Divider />
-
-                  {/* ── Sentiment + Category (Modern 3D Visualizations) ──────────── */}
+                  {/* ── Sentiment & Category Intelligence ── */}
+                  <div className="mb-3 mt-8 flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-teal-500 shadow-xs inline-block" />
+                      <h2 className="text-xs font-black uppercase tracking-[0.16em] text-[var(--dash-heading)]">
+                        Sentiment & Category Intelligence
+                      </h2>
+                    </div>
+                    <p className="text-xs font-semibold text-[var(--dash-muted)]">
+                      Dimensional distribution of customer responses and operational domains
+                    </p>
+                  </div>
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
 
                     {/* Sentiment Analysis - 3D Extruded Donut */}
-                    <Card>
-                      <div className="flex items-start justify-between mb-3 gap-2">
-                        <div>
-                          <SectionTitle>Sentiment Breakdown</SectionTitle>
-                          <p className="text-xs text-[var(--dash-muted)] font-medium">
-                            {totalReviews ? `${positiveRate}% satisfaction across ${totalReviews} recorded reviews` : 'Customer sentiment breakdown'}
-                          </p>
+                    <Card className="flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between mb-4 gap-2">
+                          <div>
+                            <SectionTitle>Sentiment Breakdown</SectionTitle>
+                            <p className="text-xs text-[var(--dash-muted)] font-medium">
+                              {totalReviews ? `${positiveRate}% satisfaction across ${totalReviews} recorded reviews` : 'Customer sentiment breakdown'}
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-[var(--dash-border)] bg-[var(--dash-inset)] px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[var(--dash-muted)] shadow-xs">
+                            {totalReviews} Total
+                          </span>
+                        </div>
+                        <ThreeDDonutChart
+                          data={[
+                            { name: SENTIMENT_LABEL['positive'] ?? 'Positive', value: positive, color: '#22c55e', gradientFrom: '#16a34a', gradientTo: '#4ade80' },
+                            { name: SENTIMENT_LABEL['negative'] ?? 'Negative', value: negative, color: '#f97316', gradientFrom: '#ea580c', gradientTo: '#fb923c' },
+                            { name: SENTIMENT_LABEL['complaint'] ?? 'Complaint', value: complaint, color: '#ef4444', gradientFrom: '#dc2626', gradientTo: '#f87171' },
+                            { name: SENTIMENT_LABEL['suggestion'] ?? 'Suggestion', value: suggestion, color: '#6366f1', gradientFrom: '#4f46e5', gradientTo: '#818cf8' },
+                          ]}
+                          centerLabel="reviews"
+                          centerValue={totalReviews}
+                          size={220}
+                        />
+                      </div>
+
+                      {/* Sentiment Intelligence Breakdown Metrics */}
+                      <div className="mt-6 pt-5 border-t border-[var(--dash-border)]">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                          <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-inset)] p-2.5 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--dash-muted)] block">Positive</span>
+                            <span className="text-lg font-black text-[var(--dash-ink-positive)] block mt-0.5">{positive}</span>
+                            <span className="text-[10px] font-semibold text-[var(--dash-muted)]">{positiveRate}% share</span>
+                          </div>
+                          <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-inset)] p-2.5 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--dash-muted)] block">Negative</span>
+                            <span className="text-lg font-black text-[var(--dash-ink-negative)] block mt-0.5">{negative}</span>
+                            <span className="text-[10px] font-semibold text-[var(--dash-muted)]">{totalReviews ? Math.round((negative / totalReviews) * 100) : 0}% share</span>
+                          </div>
+                          <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-inset)] p-2.5 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--dash-muted)] block">Complaint</span>
+                            <span className="text-lg font-black text-[var(--dash-ink-complaint)] block mt-0.5">{complaint}</span>
+                            <span className="text-[10px] font-semibold text-[var(--dash-muted)]">{complaintRate}% share</span>
+                          </div>
+                          <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-inset)] p-2.5 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--dash-muted)] block">Suggestion</span>
+                            <span className="text-lg font-black text-[var(--dash-ink-suggestion)] block mt-0.5">{suggestion}</span>
+                            <span className="text-[10px] font-semibold text-[var(--dash-muted)]">{totalReviews ? Math.round((suggestion / totalReviews) * 100) : 0}% share</span>
+                          </div>
+                        </div>
+
+                        {/* Executive Sentiment Health Callout */}
+                        <div className="mt-3 flex items-center gap-2.5 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-inset)] px-3.5 py-2 text-xs font-semibold text-[var(--dash-muted)]">
+                          <span className="text-base shrink-0">
+                            {positiveRate >= 50 ? '🌟' : complaintRate >= 30 ? '⚠️' : '📊'}
+                          </span>
+                          <span className="truncate">
+                            {positiveRate >= 50
+                              ? `Healthy sentiment balance with ${positiveRate}% positive feedback across active branches.`
+                              : complaintRate >= 30
+                                ? `Active customer friction detected (${complaintRate}% complaints). Fast resolution advised.`
+                                : `Balanced customer feedback across ${totalReviews} recorded interactions.`}
+                          </span>
                         </div>
                       </div>
-                      <ThreeDDonutChart
-                        data={[
-                          { name: SENTIMENT_LABEL['positive'] ?? 'Positive', value: positive, color: '#22c55e', gradientFrom: '#16a34a', gradientTo: '#4ade80' },
-                          { name: SENTIMENT_LABEL['negative'] ?? 'Negative', value: negative, color: '#f97316', gradientFrom: '#ea580c', gradientTo: '#fb923c' },
-                          { name: SENTIMENT_LABEL['complaint'] ?? 'Complaint', value: complaint, color: '#ef4444', gradientFrom: '#dc2626', gradientTo: '#f87171' },
-                          { name: SENTIMENT_LABEL['suggestion'] ?? 'Suggestion', value: suggestion, color: '#6366f1', gradientFrom: '#4f46e5', gradientTo: '#818cf8' },
-                        ]}
-                        centerLabel="reviews"
-                        centerValue={totalReviews}
-                        size={220}
-                      />
                     </Card>
 
                     {/* Category Analysis - 3D Horizontal Bars */}
-                    <Card>
+                    <Card className="flex flex-col justify-between">
                       <div className="flex items-start justify-between mb-3 gap-2">
                         <div>
                           <SectionTitle>Category Breakdown</SectionTitle>
@@ -1645,7 +1756,7 @@ export function DashboardClient({ data, session, initialTheme }: {
                         unit="reviews"
                         highlightTop={true}
                       />
-                      <div className="flex gap-3 mt-4 text-xs text-slate-500 flex-wrap pt-3 border-t border-[var(--dash-border)]">
+                      <div className="flex gap-3 mt-4 text-xs text-[var(--dash-muted)] flex-wrap pt-3 border-t border-[var(--dash-border)]">
                         <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#22c55e] inline-block shadow-sm" />Positive</span>
                         <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#f97316] inline-block shadow-sm" />Negative</span>
                         <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] inline-block shadow-sm" />Complaint</span>
@@ -1654,68 +1765,188 @@ export function DashboardClient({ data, session, initialTheme }: {
                     </Card>
                   </div>
 
-                  {/* ── Shop Performance ────────────────────────────────────────── */}
-                  <SectionTitle>Outlet Performance</SectionTitle>
+                  {/* ── Outlet Performance & Rankings ── */}
+                  <div className="mb-3 mt-8 flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-[var(--dash-accent)] shadow-xs inline-block" />
+                      <h2 className="text-xs font-black uppercase tracking-[0.16em] text-[var(--dash-heading)]">
+                        Outlet Performance & Rankings
+                      </h2>
+                    </div>
+                    <p className="text-xs font-semibold text-[var(--dash-muted)]">
+                      Branch satisfaction index, volume split and operational health
+                    </p>
+                  </div>
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
                     {rankedShops.map((shop, i) => <ShopCard key={shop.id} shop={shop} rank={i + 1} />)}
                   </div>
 
-                  <Divider />
-
-                  {/* ── Top Issues + Top Suggestions ────────────────────────────── */}
+                  {/* ── Customer Voice & Issues ── */}
+                  <div className="mb-3 mt-8 flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-rose-500 shadow-xs inline-block" />
+                      <h2 className="text-xs font-black uppercase tracking-[0.16em] text-[var(--dash-heading)]">
+                        Customer Issues & Voice
+                      </h2>
+                    </div>
+                    <p className="text-xs font-semibold text-[var(--dash-muted)]">
+                      High-friction pain points, complaints and guest feature suggestions
+                    </p>
+                  </div>
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
 
                     {/* Top Issues */}
                     <Card>
-                      <SectionTitle>Top Issues Requiring Attention</SectionTitle>
-                      {topIssues.length === 0
-                        ? <p className="text-slate-500 text-sm">No critical issues found.</p>
-                        : (
-                          <div className="space-y-2">
-                            {topIssues.map((issue, i) => (
-                              <div key={i} className={`flex items-center gap-3 p-2.5 ${insetCls} rounded-lg`}>
-                                <Dot color={issue.sentiment === 'complaint' ? '#ef4444' : '#f97316'} />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm text-slate-800 capitalize break-words">{issue.subcategory}</p>
-                                  <p className="text-xs text-slate-500 capitalize">{issue.category}</p>
+                      <div className="mb-4">
+                        <SectionTitle>Top Issues Requiring Attention</SectionTitle>
+                        <p className="text-xs font-semibold text-[var(--dash-muted)]">
+                          Recurring operational and service friction points
+                        </p>
+                      </div>
+                      {topIssues.length === 0 ? (
+                        <p className="text-xs font-semibold text-[var(--dash-muted)] py-6 text-center">
+                          No critical issues found.
+                        </p>
+                      ) : (
+                        <div className="space-y-2.5">
+                          {topIssues.map((issue, i) => {
+                            const isComplaint = issue.sentiment === 'complaint'
+                            const accentColor = isComplaint ? '#ef4444' : '#f97316'
+                            const inkColor = isComplaint ? 'var(--dash-ink-complaint)' : 'var(--dash-ink-negative)'
+                            return (
+                              <div
+                                key={i}
+                                className="group relative flex items-center gap-3.5 p-3 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-inset)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                                style={{
+                                  boxShadow: '0 2px 8px -2px var(--dash-shadow), inset 0 1px 0 rgba(255,255,255,0.4)',
+                                }}
+                              >
+                                <div
+                                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-sm font-bold shadow-xs transition-transform group-hover:scale-105"
+                                  style={{
+                                    backgroundColor: `${accentColor}18`,
+                                    borderColor: `${accentColor}40`,
+                                    color: accentColor,
+                                    boxShadow: `0 2px 6px ${accentColor}25`,
+                                  }}
+                                >
+                                  {isComplaint ? '🚨' : '⚠️'}
                                 </div>
-                                <span className="text-sm font-bold shrink-0"
-                                  style={{ color: issue.sentiment === 'complaint' ? SENTIMENT_INK.complaint : SENTIMENT_INK.negative }}>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-bold text-[var(--dash-heading)] capitalize break-words leading-snug">
+                                    {issue.subcategory}
+                                  </p>
+                                  <p className="text-xs font-semibold text-[var(--dash-muted)] capitalize mt-0.5">
+                                    {issue.category}
+                                  </p>
+                                </div>
+                                <div
+                                  className="relative shrink-0 overflow-hidden rounded-full px-3 py-1 text-xs font-black border shadow-xs"
+                                  style={{
+                                    backgroundColor: `${accentColor}15`,
+                                    borderColor: `${accentColor}35`,
+                                    color: inkColor,
+                                  }}
+                                >
+                                  <div
+                                    className="absolute inset-x-0 top-0 h-[40%] pointer-events-none rounded-t-full"
+                                    style={{
+                                      background: 'linear-gradient(to bottom, rgba(255,255,255,0.6) 0%, transparent 100%)',
+                                    }}
+                                  />
                                   {issue.count}×
-                                </span>
+                                </div>
                               </div>
-                            ))}
-                          </div>
-                        )}
+                            )
+                          })}
+                        </div>
+                      )}
                     </Card>
 
                     {/* Top Suggestions */}
                     <Card>
-                      <SectionTitle>Top Customer Suggestions</SectionTitle>
-                      {topSuggestions.length === 0
-                        ? <p className="text-slate-500 text-sm">No suggestions recorded yet</p>
-                        : (
-                          <div className="space-y-2">
-                            {topSuggestions.map((s, i) => (
-                              <div key={i} className={`flex items-center gap-3 p-2.5 ${insetCls} rounded-lg`}>
-                                <Dot color="#6366f1" />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm text-slate-800 capitalize break-words">{s.subcategory}</p>
-                                  <p className="text-xs text-slate-500 capitalize">{s.category}</p>
+                      <div className="mb-4">
+                        <SectionTitle>Top Customer Suggestions</SectionTitle>
+                        <p className="text-xs font-semibold text-[var(--dash-muted)]">
+                          Product, service and experience upgrades requested by guests
+                        </p>
+                      </div>
+                      {topSuggestions.length === 0 ? (
+                        <p className="text-xs font-semibold text-[var(--dash-muted)] py-6 text-center">
+                          No suggestions recorded yet.
+                        </p>
+                      ) : (
+                        <div className="space-y-2.5">
+                          {topSuggestions.map((s, i) => {
+                            const accentColor = '#6366f1'
+                            const inkColor = 'var(--dash-ink-suggestion)'
+                            return (
+                              <div
+                                key={i}
+                                className="group relative flex items-center gap-3.5 p-3 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-inset)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                                style={{
+                                  boxShadow: '0 2px 8px -2px var(--dash-shadow), inset 0 1px 0 rgba(255,255,255,0.4)',
+                                }}
+                              >
+                                <div
+                                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-sm font-bold shadow-xs transition-transform group-hover:scale-105"
+                                  style={{
+                                    backgroundColor: `${accentColor}18`,
+                                    borderColor: `${accentColor}40`,
+                                    color: accentColor,
+                                    boxShadow: `0 2px 6px ${accentColor}25`,
+                                  }}
+                                >
+                                  💡
                                 </div>
-                                <span className="text-sm font-bold shrink-0" style={{ color: SENTIMENT_INK.suggestion }}>{s.count}×</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-bold text-[var(--dash-heading)] capitalize break-words leading-snug">
+                                    {s.subcategory}
+                                  </p>
+                                  <p className="text-xs font-semibold text-[var(--dash-muted)] capitalize mt-0.5">
+                                    {s.category}
+                                  </p>
+                                </div>
+                                <div
+                                  className="relative shrink-0 overflow-hidden rounded-full px-3 py-1 text-xs font-black border shadow-xs"
+                                  style={{
+                                    backgroundColor: `${accentColor}15`,
+                                    borderColor: `${accentColor}35`,
+                                    color: inkColor,
+                                  }}
+                                >
+                                  <div
+                                    className="absolute inset-x-0 top-0 h-[40%] pointer-events-none rounded-t-full"
+                                    style={{
+                                      background: 'linear-gradient(to bottom, rgba(255,255,255,0.6) 0%, transparent 100%)',
+                                    }}
+                                  />
+                                  {s.count}×
+                                </div>
                               </div>
-                            ))}
-                          </div>
-                        )}
+                            )
+                          })}
+                        </div>
+                      )}
                     </Card>
                   </div>
 
-                  {/* ── Trend + Rating Distribution ─────────────────────────────── */}
+                  {/* ── Volume Trends & Rating Distribution ── */}
+                  <div className="mb-3 mt-8 flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-xs inline-block" />
+                      <h2 className="text-xs font-black uppercase tracking-[0.16em] text-[var(--dash-heading)]">
+                        Volume Trends & Rating Distribution
+                      </h2>
+                    </div>
+                    <p className="text-xs font-semibold text-[var(--dash-muted)]">
+                      Historical review trajectory and customer score segmentation
+                    </p>
+                  </div>
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
 
                     {/* Monthly Trend - 3D Cylindrical Columns & Trend Line Toggle */}
-                    <Card>
+                    <Card className="flex flex-col justify-between">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
                         <div>
                           <SectionTitle>Monthly Review Volume</SectionTitle>
@@ -1777,35 +2008,119 @@ export function DashboardClient({ data, session, initialTheme }: {
                     </Card>
 
                     {/* Rating Distribution */}
-                    <Card>
-                      <SectionTitle>Rating Distribution</SectionTitle>
-                      {ratingDist.length === 0
-                        ? <p className="text-slate-500 text-sm">No ratings collected yet</p>
-                        : (
-                          <div className="space-y-1">
-                            {[5, 4, 3, 2, 1].map((star) => {
-                              const found = ratingDist.find((r) => r.rating === star)
-                              return <RatingBar key={star} rating={star} count={found?.count ?? 0} max={maxRating} />
-                            })}
+                    <Card className="flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between mb-4 gap-2">
+                          <div>
+                            <SectionTitle>Rating Distribution</SectionTitle>
+                            <p className="text-xs text-[var(--dash-muted)] font-medium">
+                              Customer star score segmentation and review volume
+                            </p>
                           </div>
-                        )}
-                      {avgRating !== null && (
-                        <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
-                          <span className="text-sm text-slate-500">Overall Average</span>
-                          <span className="text-lg font-bold" style={{ color: 'var(--dash-ink-rating)' }}>{avgRating} / 5</span>
+                          {avgRating !== null && (
+                            <div className="flex items-center gap-1.5 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-inset)] px-3 py-1 shadow-xs">
+                              <span className="text-sm font-black" style={{ color: 'var(--dash-ink-rating)' }}>{avgRating}</span>
+                              <span className="text-amber-400 text-xs">★</span>
+                              <span className="text-[10px] font-bold text-[var(--dash-muted)]">avg</span>
+                            </div>
+                          )}
                         </div>
-                      )}
+
+                        {ratingDist.length === 0
+                          ? <p className="text-slate-500 text-sm py-8 text-center">No ratings collected yet</p>
+                          : (
+                            <div className="space-y-2 my-2">
+                              {[5, 4, 3, 2, 1].map((star) => {
+                                const found = ratingDist.find((r) => r.rating === star)
+                                return <RatingBar key={star} rating={star} count={found?.count ?? 0} max={maxRating} />
+                              })}
+                            </div>
+                          )}
+                      </div>
+
+                      {/* CSAT / NPS Tier Segmentation & Quality Breakdown */}
+                      <div className="mt-5 pt-4 border-t border-[var(--dash-border)]">
+                        <div className="grid grid-cols-3 gap-2.5">
+                          {/* Promoters */}
+                          <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-inset)] p-2.5 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--dash-muted)] block truncate">Promoters (4-5★)</span>
+                            <span className="text-lg font-black text-[var(--dash-ink-positive)] block mt-0.5">
+                              {(ratingDist.find((r) => r.rating === 5)?.count ?? 0) + (ratingDist.find((r) => r.rating === 4)?.count ?? 0)}
+                            </span>
+                            <span className="text-[10px] font-semibold text-[var(--dash-muted)]">
+                              {totalReviews
+                                ? Math.round(
+                                    (((ratingDist.find((r) => r.rating === 5)?.count ?? 0) +
+                                      (ratingDist.find((r) => r.rating === 4)?.count ?? 0)) /
+                                      totalReviews) *
+                                      100
+                                  )
+                                : 0}% share
+                            </span>
+                          </div>
+
+                          {/* Neutral */}
+                          <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-inset)] p-2.5 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--dash-muted)] block truncate">Neutral (3★)</span>
+                            <span className="text-lg font-black text-amber-500 block mt-0.5">
+                              {ratingDist.find((r) => r.rating === 3)?.count ?? 0}
+                            </span>
+                            <span className="text-[10px] font-semibold text-[var(--dash-muted)]">
+                              {totalReviews
+                                ? Math.round(((ratingDist.find((r) => r.rating === 3)?.count ?? 0) / totalReviews) * 100)
+                                : 0}% share
+                            </span>
+                          </div>
+
+                          {/* Detractors */}
+                          <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-inset)] p-2.5 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--dash-muted)] block truncate">Detractors (1-2★)</span>
+                            <span className="text-lg font-black text-[var(--dash-ink-complaint)] block mt-0.5">
+                              {(ratingDist.find((r) => r.rating === 2)?.count ?? 0) + (ratingDist.find((r) => r.rating === 1)?.count ?? 0)}
+                            </span>
+                            <span className="text-[10px] font-semibold text-[var(--dash-muted)]">
+                              {totalReviews
+                                ? Math.round(
+                                    (((ratingDist.find((r) => r.rating === 2)?.count ?? 0) +
+                                      (ratingDist.find((r) => r.rating === 1)?.count ?? 0)) /
+                                      totalReviews) *
+                                      100
+                                  )
+                                : 0}% share
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Summary footer */}
+                        <div className="mt-3 flex items-center justify-between text-xs px-1">
+                          <span className="font-semibold text-[var(--dash-muted)]">Satisfaction Index:</span>
+                          <span className="font-black" style={{ color: 'var(--dash-ink-rating)' }}>
+                            {avgRating ? `${Math.round((avgRating / 5) * 100)}% CSAT (${avgRating} / 5.0)` : '—'}
+                          </span>
+                        </div>
+                      </div>
                     </Card>
                   </div>
 
                   {/* ── Recent Reviews (preview, click to see all) ──────────────── */}
+                  <div className="mb-3 mt-8 flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-[var(--dash-accent)] shadow-xs inline-block" />
+                      <h2 className="text-xs font-black uppercase tracking-[0.16em] text-[var(--dash-heading)]">
+                        Recent Customer Reviews
+                      </h2>
+                    </div>
+                    <p className="text-xs font-semibold text-[var(--dash-muted)]">
+                      Live customer feedback feed with instant triage
+                    </p>
+                  </div>
                   <Card className="mb-8">
                     <div className="flex items-center justify-between mb-4">
-                      <SectionTitle>Recent Reviews</SectionTitle>
+                      <SectionTitle>Live Feedback Feed</SectionTitle>
                       <button onClick={() => setTab('reviews')}
                         className="text-xs font-black hover:underline"
                         style={{ color: theme.accent }}>
-                        View all →
+                        View all reviews →
                       </button>
                     </div>
                     <ReviewsPanel reviews={recentReviews.slice(0, 6)} />

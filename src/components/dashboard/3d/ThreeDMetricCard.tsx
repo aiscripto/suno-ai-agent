@@ -17,95 +17,77 @@ export interface ThreeDMetricCardProps {
   isNegative?: boolean
 }
 
-const TONE_MAP: Record<string, {
+const TONE_TOKENS: Record<string, {
   dot: string
   iconBg: string
-  iconText: string
   iconBorder: string
   progress: string
-  border: string
   glow: string
-  textInk: string
+  badgeText: string
 }> = {
   blue: {
     dot: '#2563eb',
-    iconBg: 'bg-gradient-to-br from-blue-50 to-blue-100',
-    iconText: 'text-blue-700',
-    iconBorder: 'border-blue-200/80',
-    progress: 'linear-gradient(90deg, #2563eb, #60a5fa)',
-    border: 'border-blue-200/70 hover:border-blue-400',
-    glow: 'rgba(37, 99, 235, 0.12)',
-    textInk: 'text-blue-900',
+    iconBg: 'bg-blue-500/15',
+    iconBorder: 'border-blue-400/40',
+    progress: 'linear-gradient(90deg, #1d4ed8 0%, #3b82f6 100%)',
+    glow: 'rgba(37, 99, 235, 0.16)',
+    badgeText: 'text-blue-600',
   },
   teal: {
     dot: '#0d9488',
-    iconBg: 'bg-gradient-to-br from-teal-50 to-teal-100',
-    iconText: 'text-teal-700',
-    iconBorder: 'border-teal-200/80',
-    progress: 'linear-gradient(90deg, #0d9488, #2dd4bf)',
-    border: 'border-teal-200/70 hover:border-teal-400',
-    glow: 'rgba(13, 148, 136, 0.12)',
-    textInk: 'text-teal-900',
+    iconBg: 'bg-teal-500/15',
+    iconBorder: 'border-teal-400/40',
+    progress: 'linear-gradient(90deg, #0f766e 0%, #14b8a6 100%)',
+    glow: 'rgba(13, 148, 136, 0.16)',
+    badgeText: 'text-teal-600',
   },
   green: {
     dot: '#16a34a',
-    iconBg: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
-    iconText: 'text-emerald-700',
-    iconBorder: 'border-emerald-200/80',
-    progress: 'linear-gradient(90deg, #16a34a, #4ade80)',
-    border: 'border-emerald-200/70 hover:border-emerald-400',
-    glow: 'rgba(22, 163, 74, 0.12)',
-    textInk: 'text-emerald-900',
+    iconBg: 'bg-emerald-500/15',
+    iconBorder: 'border-emerald-400/40',
+    progress: 'linear-gradient(90deg, #15803d 0%, #22c55e 100%)',
+    glow: 'rgba(22, 163, 74, 0.16)',
+    badgeText: 'text-emerald-600',
   },
   orange: {
     dot: '#ea580c',
-    iconBg: 'bg-gradient-to-br from-orange-50 to-orange-100',
-    iconText: 'text-orange-700',
-    iconBorder: 'border-orange-200/80',
-    progress: 'linear-gradient(90deg, #ea580c, #fb923c)',
-    border: 'border-orange-200/70 hover:border-orange-400',
-    glow: 'rgba(234, 88, 12, 0.12)',
-    textInk: 'text-orange-900',
+    iconBg: 'bg-orange-500/15',
+    iconBorder: 'border-orange-400/40',
+    progress: 'linear-gradient(90deg, #c2410c 0%, #f97316 100%)',
+    glow: 'rgba(234, 88, 12, 0.16)',
+    badgeText: 'text-orange-600',
   },
   red: {
     dot: '#dc2626',
-    iconBg: 'bg-gradient-to-br from-red-50 to-red-100',
-    iconText: 'text-red-700',
-    iconBorder: 'border-red-200/80',
-    progress: 'linear-gradient(90deg, #dc2626, #f87171)',
-    border: 'border-red-200/70 hover:border-red-400',
-    glow: 'rgba(220, 38, 38, 0.12)',
-    textInk: 'text-red-900',
+    iconBg: 'bg-red-500/15',
+    iconBorder: 'border-red-400/40',
+    progress: 'linear-gradient(90deg, #b91c1c 0%, #ef4444 100%)',
+    glow: 'rgba(220, 38, 38, 0.16)',
+    badgeText: 'text-red-600',
   },
   amber: {
     dot: '#d97706',
-    iconBg: 'bg-gradient-to-br from-amber-50 to-amber-100',
-    iconText: 'text-amber-800',
-    iconBorder: 'border-amber-200/80',
-    progress: 'linear-gradient(90deg, #d97706, #fbbf24)',
-    border: 'border-amber-200/70 hover:border-amber-400',
-    glow: 'rgba(217, 119, 6, 0.12)',
-    textInk: 'text-amber-900',
+    iconBg: 'bg-amber-500/15',
+    iconBorder: 'border-amber-400/40',
+    progress: 'linear-gradient(90deg, #b45309 0%, #f59e0b 100%)',
+    glow: 'rgba(217, 119, 6, 0.16)',
+    badgeText: 'text-amber-600',
   },
   purple: {
     dot: '#6366f1',
-    iconBg: 'bg-gradient-to-br from-indigo-50 to-indigo-100',
-    iconText: 'text-indigo-700',
-    iconBorder: 'border-indigo-200/80',
-    progress: 'linear-gradient(90deg, #6366f1, #a5b4fc)',
-    border: 'border-indigo-200/70 hover:border-indigo-400',
-    glow: 'rgba(99, 102, 241, 0.12)',
-    textInk: 'text-indigo-900',
+    iconBg: 'bg-indigo-500/15',
+    iconBorder: 'border-indigo-400/40',
+    progress: 'linear-gradient(90deg, #4f46e5 0%, #818cf8 100%)',
+    glow: 'rgba(99, 102, 241, 0.16)',
+    badgeText: 'text-indigo-600',
   },
   slate: {
     dot: '#64748b',
-    iconBg: 'bg-gradient-to-br from-slate-50 to-slate-100',
-    iconText: 'text-slate-700',
-    iconBorder: 'border-slate-200/80',
-    progress: 'linear-gradient(90deg, #64748b, #94a3b8)',
-    border: 'border-slate-200/70 hover:border-slate-400',
-    glow: 'rgba(100, 116, 139, 0.12)',
-    textInk: 'text-slate-900',
+    iconBg: 'bg-slate-500/15',
+    iconBorder: 'border-slate-400/40',
+    progress: 'linear-gradient(90deg, #475569 0%, #94a3b8 100%)',
+    glow: 'rgba(100, 116, 139, 0.16)',
+    badgeText: 'text-slate-600',
   },
 }
 
@@ -119,212 +101,224 @@ export function ThreeDMetricCard({
   progressColor,
   info,
   highlight = false,
-  tone = 'amber',
+  tone = 'blue',
   className = '',
   isNegative = false,
 }: ThreeDMetricCardProps) {
-  const currentTone = TONE_MAP[tone] || TONE_MAP.amber
+  const currentTone = TONE_TOKENS[tone] || TONE_TOKENS.blue
   const activeDot = color || currentTone.dot
 
   return (
     <div
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-3.5 sm:p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${highlight
-          ? 'border-amber-400/90 ring-4 ring-amber-100/80 shadow-md'
-          : 'border-amber-200/60 dark:border-slate-700 hover:border-amber-400'
-        } ${className}`}
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[var(--dash-border)] bg-[var(--dash-surface)] p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
+        highlight
+          ? 'border-[var(--dash-accent)] ring-4 ring-[var(--dash-ring)] shadow-md'
+          : 'hover:border-[var(--dash-accent)]/50'
+      } ${className}`}
       style={{
-        background:
-          'linear-gradient(135deg, rgba(255, 253, 248, 0.98) 0%, rgba(255, 250, 240, 0.92) 50%, rgba(255, 255, 255, 0.98) 100%)',
-        boxShadow: `0 10px 24px -5px ${currentTone.glow}, 0 4px 6px -2px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95)`,
+        boxShadow: `0 10px 25px -5px var(--dash-shadow), 0 4px 6px -2px var(--dash-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.4)`,
       }}
     >
       {/* 3D Top Bevel Specular Sheen */}
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-200/70 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
 
       {/* Header: Badge Icon, Label, Dot & Info */}
       <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            {icon ? (
-              <div
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border ${currentTone.iconBorder} ${currentTone.iconBg} ${currentTone.iconText} text-xs font-black shadow-xs`}
-              >
-                {icon}
-              </div>
-            ) : (
-              <span
-                className="h-2 w-2 rounded-full shrink-0 shadow-sm"
-                style={{ background: activeDot, boxShadow: `0 0 6px ${activeDot}90` }}
-              />
-            )}
-            <span className="text-[0.66rem] font-black uppercase tracking-[0.14em] text-amber-900/80 truncate">
-              {label}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          {icon ? (
+            <div
+              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border ${currentTone.iconBorder} ${currentTone.iconBg} ${currentTone.badgeText} text-xs font-black shadow-xs`}
+            >
+              {icon}
+            </div>
+          ) : (
             <span
-              className="h-2 w-2 rounded-full shadow-xs"
-              style={{ background: activeDot, boxShadow: `0 0 5px ${activeDot}90` }}
+              className="h-2 w-2 rounded-full shrink-0 shadow-sm"
+              style={{ background: activeDot, boxShadow: `0 0 6px ${activeDot}90` }}
             />
-              {info && (
-                <div
-                  className="flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-amber-800/60 hover:text-amber-900 cursor-help transition-colors"
-                  title={info}
-                >
-                  ⓘ
-                </div>
-              )}
-          </div>
-        </div>
-
-        {/* Main Metric Value (Warm 3D typography inspired by 3D.png) */}
-        <div className="mt-2.5">
-          <span
-            className={`text-2xl font-black leading-none tracking-tight sm:text-3xl ${isNegative ? 'text-red-700' : 'text-amber-950 font-black'
-              }`}
-            style={{
-              textShadow: '0 1px 1px rgba(0,0,0,0.04)',
-            }}
-          >
-            {value}
+          )}
+          <span className="text-[0.66rem] font-black uppercase tracking-[0.14em] text-[var(--dash-muted)] truncate">
+            {label}
           </span>
         </div>
 
-        {/* 3D Micro Glowing Progress Bar (Like Total Accounts / Posted Vouchers) */}
-        {progressPct !== undefined && (
-          <div className="mt-2">
-            <div className="relative h-1.5 w-full rounded-full bg-amber-100/70 overflow-hidden shadow-inner p-[0.5px]">
-              <div
-                className="relative h-full rounded-full transition-all duration-500 ease-out"
-                style={{
-                  width: `${Math.min(100, Math.max(progressPct, 4))}%`,
-                  background: progressColor || currentTone.progress,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
-                }}
-              >
-                {/* Specular gloss highlight on the micro bar */}
-                <div
-                  className="absolute inset-x-0 top-0 h-[50%] pointer-events-none rounded-t-full"
-                  style={{
-                    background:
-                      'linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, transparent 100%)',
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Subtext */}
-        <div className="mt-2 flex items-center justify-between text-xs font-semibold text-slate-500 truncate">
-          <span>{sub || 'Current dataset'}</span>
-        </div>
-      </div>
-      )
-}
-
-      export interface ThreeDInsightCardProps {
-        label: string
-      value: string | number
-      detail: string
-      icon?: React.ReactNode
-      tone?: 'blue' | 'teal' | 'orange' | 'red' | 'amber' | 'green' | 'slate'
-      progressPct?: number
-      info?: string
-      className?: string
-}
-
-      export function ThreeDInsightCard({
-        label,
-        value,
-        detail,
-        icon,
-        tone = 'blue',
-        progressPct,
-        info,
-        className = '',
-}: ThreeDInsightCardProps) {
-  const currentTone = TONE_MAP[tone] || TONE_MAP.blue
-
-      return (
-      <div
-        className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border-amber-200/60 hover:border-amber-400 ${className}`}
-        style={{
-          background:
-            'linear-gradient(135deg, rgba(255, 253, 248, 0.98) 0%, rgba(255, 250, 240, 0.92) 50%, rgba(255, 255, 255, 0.98) 100%)',
-          boxShadow: `0 10px 24px -5px ${currentTone.glow}, 0 4px 6px -2px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95)`,
-        }}
-      >
-        {/* 3D Top Bevel Specular Sheen */}
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-200/70 to-transparent pointer-events-none" />
-
-        {/* Header: Icon, Label with > arrow, Info */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            {icon ? (
-              <div
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border ${currentTone.iconBorder} ${currentTone.iconBg} ${currentTone.iconText} text-xs font-black shadow-xs`}
-              >
-                {icon}
-              </div>
-            ) : (
-              <span
-                className="h-2 w-2 rounded-full shrink-0 shadow-sm"
-                style={{ background: currentTone.dot, boxShadow: `0 0 6px ${currentTone.dot}90` }}
-              />
-            )}
-            <span className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-amber-900/80 truncate">
-              {label}
-            </span>
-            <span className="text-amber-700/60 font-bold text-xs">›</span>
-          </div>
-
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span
+            className="h-2 w-2 rounded-full shadow-xs transition-transform duration-200 group-hover:scale-125"
+            style={{ background: activeDot, boxShadow: `0 0 6px ${activeDot}90` }}
+          />
           {info && (
             <div
-              className="flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-amber-800/60 hover:text-amber-900 cursor-help"
+              className="flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-[var(--dash-muted)] opacity-60 hover:opacity-100 cursor-help transition-opacity"
               title={info}
             >
               ⓘ
             </div>
           )}
         </div>
+      </div>
 
-        {/* Main Metric Value */}
-          <div className="mt-2.5">
-            <span
-              className="text-xl font-black leading-tight tracking-tight sm:text-2xl text-amber-950"
-              style={{ textShadow: '0 1px 1px rgba(0,0,0,0.04)' }}
+      {/* Main Metric Value */}
+      <div className="mt-3">
+        <span
+          className={`text-2xl font-black leading-none tracking-tight sm:text-3xl ${
+            isNegative ? 'text-red-700 font-extrabold' : 'text-[var(--dash-heading)]'
+          }`}
+        >
+          {value}
+        </span>
+      </div>
+
+      {/* 3D Micro Progress Bar */}
+      {progressPct !== undefined && (
+        <div className="mt-2.5">
+          <div className="relative h-1.5 w-full rounded-full bg-[var(--dash-border)]/50 overflow-hidden shadow-inner p-[0.5px]">
+            <div
+              className="relative h-full rounded-full transition-all duration-500 ease-out"
+              style={{
+                width: `${Math.min(100, Math.max(progressPct, 4))}%`,
+                background: progressColor || currentTone.progress,
+                boxShadow: `0 1px 3px ${currentTone.glow}`,
+              }}
             >
-              {value}
-            </span>
+              {/* Specular curved highlight on micro bar */}
+              <div
+                className="absolute inset-x-0 top-0 h-[50%] pointer-events-none rounded-t-full"
+                style={{
+                  background:
+                    'linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, transparent 100%)',
+                }}
+              />
+            </div>
           </div>
-
-                {/* Micro 3D Progress Bar */}
-                {progressPct !== undefined && (
-                  <div className="mt-2">
-                    <div className="relative h-1.5 w-full rounded-full bg-amber-100/70 overflow-hidden shadow-inner p-[0.5px]">
-                      <div
-                        className="relative h-full rounded-full transition-all duration-500 ease-out"
-                        style={{
-                          width: `${Math.min(100, Math.max(progressPct, 4))}%`,
-                          background: currentTone.progress,
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
-                        }}
-            >
-                      <div
-                        className="absolute inset-x-0 top-0 h-[50%] pointer-events-none rounded-t-full"
-                        style={{
-                          background:
-                            'linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, transparent 100%)',
-                        }}
-                      />
-                    </div>
-                  </div>
-              </div>
+        </div>
       )}
 
-              {/* Detail explanation */}
-              <p className="mt-2 text-xs font-semibold leading-5 text-slate-500 truncate">{detail}</p>
+      {/* Subtext */}
+      <div className="mt-2 flex items-center justify-between text-xs font-semibold text-[var(--dash-muted)] truncate">
+        <span>{sub || 'Current dataset'}</span>
+      </div>
+    </div>
+  )
+}
+
+export interface ThreeDInsightCardProps {
+  label: string
+  value: string | number
+  detail: string
+  icon?: React.ReactNode
+  tone?: 'blue' | 'teal' | 'orange' | 'red' | 'amber' | 'green' | 'slate'
+  progressPct?: number
+  info?: string
+  className?: string
+  coloredValue?: boolean
+}
+
+export function ThreeDInsightCard({
+  label,
+  value,
+  detail,
+  icon,
+  tone = 'blue',
+  progressPct,
+  info,
+  className = '',
+  coloredValue = true,
+}: ThreeDInsightCardProps) {
+  const currentTone = TONE_TOKENS[tone] || TONE_TOKENS.blue
+
+  const valueStyle: React.CSSProperties = coloredValue
+    ? {
+        color:
+          tone === 'red'
+            ? 'var(--dash-ink-complaint)'
+            : tone === 'amber' || tone === 'orange'
+              ? 'var(--dash-ink-negative)'
+              : tone === 'blue'
+                ? 'var(--dash-accent)'
+                : tone === 'green' || tone === 'teal'
+                  ? 'var(--dash-ink-positive)'
+                  : 'var(--dash-heading)',
+      }
+    : {}
+
+  return (
+    <div
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[var(--dash-border)] bg-[var(--dash-surface)] p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-[var(--dash-accent)]/50 ${className}`}
+      style={{
+        boxShadow: `0 10px 25px -5px var(--dash-shadow), 0 4px 6px -2px var(--dash-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.4)`,
+      }}
+    >
+      {/* 3D Top Bevel Specular Sheen */}
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
+
+      {/* Header: Icon, Label with > arrow, Info */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          {icon ? (
+            <div
+              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border ${currentTone.iconBorder} ${currentTone.iconBg} ${currentTone.badgeText} text-xs font-black shadow-xs`}
+            >
+              {icon}
             </div>
-          )
-          }
+          ) : (
+            <span
+              className="h-2 w-2 rounded-full shrink-0 shadow-sm"
+              style={{ background: currentTone.dot, boxShadow: `0 0 6px ${currentTone.dot}90` }}
+            />
+          )}
+          <span className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[var(--dash-muted)] truncate">
+            {label}
+          </span>
+          <span className="text-[var(--dash-accent)] font-bold text-xs">›</span>
+        </div>
+
+        {info && (
+          <div
+            className="flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-[var(--dash-muted)] opacity-60 hover:opacity-100 cursor-help transition-opacity"
+            title={info}
+          >
+            ⓘ
+          </div>
+        )}
+      </div>
+
+      {/* Main Metric Value */}
+      <div className="mt-3">
+        <span
+          className="text-xl font-black leading-tight tracking-tight sm:text-2xl text-[var(--dash-heading)]"
+          style={valueStyle}
+        >
+          {value}
+        </span>
+      </div>
+
+      {/* Micro 3D Progress Bar */}
+      {progressPct !== undefined && (
+        <div className="mt-2.5">
+          <div className="relative h-1.5 w-full rounded-full bg-[var(--dash-border)]/50 overflow-hidden shadow-inner p-[0.5px]">
+            <div
+              className="relative h-full rounded-full transition-all duration-500 ease-out"
+              style={{
+                width: `${Math.min(100, Math.max(progressPct, 4))}%`,
+                background: currentTone.progress,
+                boxShadow: `0 1px 3px ${currentTone.glow}`,
+              }}
+            >
+              <div
+                className="absolute inset-x-0 top-0 h-[50%] pointer-events-none rounded-t-full"
+                style={{
+                  background:
+                    'linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, transparent 100%)',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail explanation */}
+      <p className="mt-2 text-xs font-semibold leading-5 text-[var(--dash-muted)] truncate">{detail}</p>
+    </div>
+  )
+}
